@@ -1,6 +1,9 @@
 # Mac file system
 .DS_Store
 
+# Dev tool: Prepros
+prepros.config
+
 # Logs
 logs
 *.log
