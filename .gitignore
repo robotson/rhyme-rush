@@ -19,6 +19,9 @@ pids
 # Dependency directories
 node_modules/
 
+# some files i'm keeping around for some reason
+local_files/
+
 # TypeScript cache
 *.tsbuildinfo
 
