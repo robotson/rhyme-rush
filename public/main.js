@@ -208,8 +208,19 @@ function startGame() {
   startTimer();
   // Get a random word from the dictionary
   if (!dictionaryLoaded) return;
-  const words = Object.keys(dictionary);
-  targetWord = words[Math.floor(Math.random() * words.length)];
+  // const words = Object.keys(dictionary);
+  // targetWord = words[Math.floor(Math.random() * words.length)];
+  // wordDisplay.textContent = targetWord;
+
+  // get a random word from the starter words array
+  targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
+  // normalize the word
+  targetWord = normalize(targetWord);
+  // make sure it's in the dictionary
+  while (!pronunciationExists(targetWord)) {
+    targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
+    targetWord = normalize(targetWord);
+  }
   wordDisplay.textContent = targetWord;
   // most common pronunciation is the first one
   targetPronunciation = dictionary[targetWord][0];
