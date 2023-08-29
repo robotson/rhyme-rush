@@ -23,6 +23,7 @@ const startButton = document.getElementById("start-button");
 const restartButton = document.getElementById("restart-button");
 const finalScore = document.getElementById("final-score");
 const textInput = document.getElementById("user-input");
+const wordForm = document.getElementById("user-input-form");
 const wordDisplay = document.getElementById("target-word");
 
 let countdownInterval;
@@ -121,4 +122,25 @@ restartButton.addEventListener("click", function () {
   initialState.classList.remove("hidden");
   score = 0;
   // Reset your game logic here
+});
+
+// Listen for form submit
+wordForm.addEventListener("submit", function (event) {
+  event.preventDefault(); // Prevents the default form submission
+
+  // Your code to run when "Enter" (or "Return") is pressed and the form is submitted
+  console.log("Form was submitted, current input:", textInput.value);
+
+  // For example, you can check if the input word matches the target word
+  if (textInput.value.toUpperCase().trim() === targetWord) {
+    console.log("Correct word!");
+    // Increase score, go to next word, etc.
+    score++;
+
+    // Reset the textInput
+    textInput.value = "";
+
+    // Get the next word
+    // Your function to get the next word here
+  }
 });
