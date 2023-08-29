@@ -120,6 +120,7 @@ body {
   position: relative;
   margin: 0.5rem auto;
   padding-left: 1rem;
+  text-align: center;
 }
 #guesses-row:after {
   content: "";
@@ -139,7 +140,8 @@ body {
 #guesses-row span {
   z-index: 1;
   padding: 0.5rem;
-  margin: auto;
+  font-size: 1.12rem;
+  margin: 0.5rem 0.25rem;
 }
 
 @keyframes blink_input_opacity_to_prevent_scrolling_when_focus {
@@ -153,4 +155,19 @@ body {
 
 input[type="text"]:focus {
   animation: blink_input_opacity_to_prevent_scrolling_when_focus 0.01s;
+}
+
+.fade-out {
+  animation: fadeOut ease 3s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
