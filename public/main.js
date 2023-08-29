@@ -125,6 +125,8 @@ wordForm.addEventListener("submit", function (event) {
     // see if the user has already guessed this word
     if (strongGuesses.has(userInput)) {
       updateStatusMessage(`Already found "${userInput}"`);
+    } else if (weakGuesses.has(userInput)) {
+      updateStatusMessage(`"${userInput}" already guessed`);
     } else {
       handleKnownPronunciation(userInput);
     }
@@ -183,6 +185,42 @@ function handleKnownPronunciation(userInput) {
       points: points,
       category: "perfect",
     });
+  }
+
+  // TODO: Off rhyme  and slant rhyme logic
+  // for now we'll handle all else cases as "near-rhymes"
+  else {
+    // we want to express a relationship
+    // between edit distances, a "near rhyme" for our purposes
+    // shall be defined as a word that is not a perfect rhyme
+    // or and off rhyme or a slant rhyme, but is within a certain
+    // edit distance of the target word, proportional to the maximum edit distance
+    // allowed for the target word. (ie: if you didn't have to change more than 50% of the sounds)
+    // then it's a near rhyme
+    const threshold = Math.floor(maxEditDistance / 2);
+    if (testDistance <= threshold) {
+      // it's a near rhyme so we add it to strong guesses, update the score, and update the display
+      // and add it to the final guesses array
+      // we'll calculate the points as the inverse of the edit distance
+      const points = Math.ceil(3 / testDistance);
+      strongGuesses.add(userInput);
+      updateScore(points);
+      updatePreviousGuesses(userInput);
+      updateStatusMessage(`"${userInput}" is a near rhyme! +${points} points`);
+      finalGuesses.push({
+        word: userInput,
+        pronunciation: testPronunciation,
+        distance: testDistance,
+        points: points,
+        category: "near",
+      });
+    }
+    // if it's not a near rhyme, we assume we've checked all the other rhyme categories
+    // and we put it in the weak guesses set, update the status message
+    else {
+      weakGuesses.add(userInput);
+      updateStatusMessage(`"${userInput}" is not a close enough rhyme match`);
+    }
   }
 }
 
