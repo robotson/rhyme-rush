@@ -10,6 +10,7 @@ const wordDisplay = document.getElementById("target-word");
 const statusDisplay = document.getElementById("status-message");
 const scoreDisplay = document.getElementById("score");
 const previousGuessesDisplay = document.getElementById("guesses-row");
+const NUM_SECONDS = 15;
 let dictionary = {};
 let dictionaryLoaded = false;
 let targetWord = "";
@@ -20,7 +21,7 @@ let statusTimeoutID;
 let countdownInterval;
 let score = 0;
 let timer;
-let timeLeft = 119; // 2 minutes in seconds minus 1 for the delay in loading
+let timeLeft = NUM_SECONDS; // 2 minutes in seconds minus 1 for the delay in loading
 const badGuesses = new Set();
 const strongGuesses = new Set();
 const weakGuesses = new Set();
@@ -102,8 +103,53 @@ function startGame() {
   maxEditDistance = targetASCIIBET.length;
 }
 function endGame() {
-  resetGameVariables();
-  // Show the final words and more info about them
+  playingState.classList.add("hidden");
+  endState.classList.remove("hidden");
+  finalScore.textContent = score;
+  // sort the final guesses array  into categories, perfect, near, off, slant
+  // and then sort each category alphabetically by word
+  const alphaSort = (a, b) => {
+    if (a.word < b.word) return -1;
+    if (a.word > b.word) return 1;
+    return 0;
+  };
+  const perfectGuesses = finalGuesses.filter(
+    (guess) => guess.category === "perfect"
+  );
+  perfectGuesses.sort((a, b) => {
+    if (a.word < b.word) return -1;
+    if (a.word > b.word) return 1;
+    return 0;
+  });
+  const offGuesses = finalGuesses.filter((guess) => guess.category === "off");
+  offGuesses.sort(alphaSort);
+  const slantGuesses = finalGuesses.filter(
+    (guess) => guess.category === "slant"
+  );
+  slantGuesses.sort(alphaSort);
+  const nearGuesses = finalGuesses.filter((guess) => guess.category === "near");
+  nearGuesses.sort(alphaSort);
+
+  // display the final guesses
+  // build a bulky html string to put in the DOM
+  let html = "";
+  const guessCategories = [
+    { name: "Perfect Rhymes", guesses: perfectGuesses },
+    { name: "Off Rhymes", guesses: offGuesses },
+    { name: "Slant Rhymes", guesses: slantGuesses },
+    { name: "Near Rhymes", guesses: nearGuesses },
+  ];
+  for (const category of guessCategories) {
+    if (category.guesses.length > 0) {
+      html += `<h3>${category.name}</h3>`;
+      html += "<ul>";
+      for (const guess of category.guesses) {
+        html += `<li>${guess.word} - ${guess.points} points</li>`;
+      }
+      html += "</ul>";
+    }
+  }
+  document.getElementById("final-words").innerHTML = html;
 }
 // Listen for the start button to be clicked
 startButton.addEventListener("click", startCountdown);
@@ -111,7 +157,7 @@ startButton.addEventListener("click", startCountdown);
 restartButton.addEventListener("click", function () {
   endState.classList.add("hidden");
   initialState.classList.remove("hidden");
-  score = 0;
+  resetGameState();
   // Reset your game logic here
 });
 
@@ -274,9 +320,9 @@ function getClosestPronunciation(userInput) {
 }
 
 // reset all the game state variables
-function resetGameVariables() {
+function resetGameState() {
   score = 0;
-  timeLeft = 119;
+  timeLeft = NUM_SECONDS;
   document.getElementById("timer").textContent = "2:00";
   document.getElementById("countdown-number").textContent = "3";
   textInput.value = "";
@@ -287,6 +333,11 @@ function resetGameVariables() {
   maxEditDistance = 0;
   clearInterval(timer);
   clearInterval(countdownInterval);
+  scoreDisplay.textContent = score;
+  previousGuessesDisplay.innerHTML = "";
+  statusDisplay.textContent = "";
+  finalGuesses.length = 0;
+  document.getElementById("final-words").innerHTML = "";
 }
 function normalize(word) {
   return word.trim().toUpperCase();
