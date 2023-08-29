@@ -10,7 +10,7 @@ const wordDisplay = document.getElementById("target-word");
 const statusDisplay = document.getElementById("status-message");
 const scoreDisplay = document.getElementById("score");
 const previousGuessesDisplay = document.getElementById("guesses-row");
-const NUM_SECONDS = 119;
+const NUM_SECONDS = 89;
 // convert num seconds into initial time display
 const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
   (NUM_SECONDS + 1) % 60 < 10 ? "0" : ""
@@ -238,6 +238,13 @@ function endGame() {
     if (a.word > b.word) return 1;
     return 0;
   };
+
+  // lets sort by points as well
+  const pointsSort = (a, b) => {
+    if (a.points > b.points) return -1;
+    if (a.points < b.points) return 1;
+    return 0;
+  };
   const perfectGuesses = finalGuesses.filter(
     (guess) => guess.category === "perfect"
   );
@@ -247,17 +254,17 @@ function endGame() {
     return 0;
   });
   const offGuesses = finalGuesses.filter((guess) => guess.category === "off");
-  offGuesses.sort(alphaSort);
+  offGuesses.sort(pointsSort);
   const slantGuesses = finalGuesses.filter(
     (guess) => guess.category === "slant"
   );
-  slantGuesses.sort(alphaSort);
+  slantGuesses.sort(pointsSort);
   const nearGuesses = finalGuesses.filter((guess) => guess.category === "near");
-  nearGuesses.sort(alphaSort);
+  nearGuesses.sort(pointsSort);
 
   // display the final guesses
   // build a bulky html string to put in the DOM
-  let html = "";
+  let html = `<h2>Target word: ${targetWord}</h2>`;
   const guessCategories = [
     { name: "Perfect Rhymes", guesses: perfectGuesses },
     { name: "Off Rhymes", guesses: offGuesses },
@@ -292,6 +299,14 @@ wordForm.addEventListener("submit", function (event) {
 
   // Get the user input
   const userInput = normalize(textInput.value);
+  // prevent them from submitting an empty string
+  if (userInput === "") return;
+  // prevent submitting the same word as the target word
+  if (userInput === targetWord) {
+    updateStatusMessage("You can't rhyme with the target word!");
+    return;
+  }
+
   if (pronunciationExists(userInput)) {
     // see if the user has already guessed this word
     if (strongGuesses.has(userInput)) {
@@ -356,11 +371,63 @@ function handleKnownPronunciation(userInput) {
       points: points,
       category: "perfect",
     });
-  }
+  } else if (isOffRhyme(testPronunciation, targetPronunciation)) {
+    // points for an offrhyme will be almost as much as a perfect rhyme, lets say, base score of 7
+    // plus a bonus for the edit distance
+    // we should be garunteed to have edit distance of at least 1 because we've already checked for perfect rhymes
+    // so we'll add 1 to the edit distance to avoid dividing by 0
+    if (testDistance === 0) {
+      testDistance = 1;
+    }
+    let points = 7;
+    const bonusPoints = Math.ceil(7 / testDistance);
 
-  // TODO: Off rhyme  and slant rhyme logic
-  // for now we'll handle all else cases as "near-rhymes"
-  else {
+    // update status message to show off rhyme, 7 points plus bonus points
+    updateStatusMessage(`Off rhyme! +7 points +${bonusPoints} phonetic bonus`);
+    // update the score
+    updateScore(7 + bonusPoints);
+    points += bonusPoints;
+    // add the word to our strong guesses set
+    strongGuesses.add(userInput);
+    // update the display of guesses
+    updatePreviousGuesses(userInput);
+    // add the word and associated info to the final guesses array
+    finalGuesses.push({
+      word: userInput,
+      pronunciation: testPronunciation,
+      distance: testDistance,
+      points: points,
+      category: "off",
+    });
+  } else if (isSlantRhyme(testPronunciation, targetPronunciation)) {
+    // we'll score slant rhymes similarly, but give them a base score of 5 points. otherwise
+    // the process is the same as off rhymes
+    if (testDistance === 0) {
+      testDistance = 1;
+    }
+    let points = 5;
+    const bonusPoints = Math.ceil(5 / testDistance);
+
+    // update status message to show off rhyme, 5 points plus bonus points
+    updateStatusMessage(
+      `Slant rhyme! +5 points +${bonusPoints} phonetic bonus`
+    );
+    // update the score
+    updateScore(5 + bonusPoints);
+    points += bonusPoints;
+    // add the word to our strong guesses set
+    strongGuesses.add(userInput);
+    // update the display of guesses
+    updatePreviousGuesses(userInput);
+    // add the word and associated info to the final guesses array
+    finalGuesses.push({
+      word: userInput,
+      pronunciation: testPronunciation,
+      distance: testDistance,
+      points: points,
+      category: "slant",
+    });
+  } else {
     // we want to express a relationship
     // between edit distances, a "near rhyme" for our purposes
     // shall be defined as a word that is not a perfect rhyme
@@ -403,6 +470,84 @@ function isPerfectRhyme(testPronunciation, targetPronunciation) {
   return testStressed === targetStressed;
 }
 
+function isOffRhyme(testPronunciation, targetPronunciation) {
+  // Helper function to generate a regular expression pattern for off-rhymes
+  function generateOffRhymePattern(pronunciation) {
+    let index = -1;
+    const stresses = ["1", "2", "0"];
+    for (const stress of stresses) {
+      index = pronunciation.lastIndexOf(stress);
+      if (index > -1) {
+        break;
+      }
+    }
+
+    let hyphenIndex = pronunciation.search("-");
+    if (hyphenIndex !== -1 && hyphenIndex < index) {
+      pronunciation = pronunciation.slice(hyphenIndex + 1);
+      pronunciation = pronunciation.trim();
+    }
+
+    let pronParts = pronunciation.split(/(..[012] R|ER[012])/);
+    pronParts = pronParts.map((part) =>
+      part.replace(/(..[012] R|ER[012])/g, "!")
+    );
+
+    pronParts = pronParts.map((part) => part.replace(/..[012]/g, ".[^R][012]"));
+    pronParts = pronParts.map((part) =>
+      part.replace("!", "(..[012] R|ER[012])")
+    );
+
+    let pronWild = pronParts.join("");
+    pronWild = pronWild + "$";
+
+    return pronWild;
+  }
+
+  const testPattern = generateOffRhymePattern(testPronunciation);
+  const targetPattern = generateOffRhymePattern(targetPronunciation);
+
+  // Compare the two patterns
+  return (
+    new RegExp(testPattern).test(targetPronunciation) ||
+    new RegExp(targetPattern).test(testPronunciation)
+  );
+}
+function isSlantRhyme(testPronunciation, targetPronunciation) {
+  // Helper function to generate a regular expression pattern for slant rhymes
+  function generateSlantRhymePattern(pronunciation) {
+    let index = pronunciation.search(/[012]/);
+
+    const pronParts = pronunciation.split("-");
+
+    let pronWild = pronParts
+      .map((part) => {
+        const vowelMatch = part.match(/..[012]/);
+        if (!vowelMatch) return "";
+        let vowel = vowelMatch[0];
+
+        return (
+          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*" +
+          vowel +
+          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*"
+        );
+      })
+      .join("-");
+
+    pronWild = pronWild + "$";
+
+    return pronWild;
+  }
+
+  const testPattern = generateSlantRhymePattern(testPronunciation);
+  const targetPattern = generateSlantRhymePattern(targetPronunciation);
+
+  // Compare the two patterns
+  return (
+    new RegExp(testPattern).test(targetPronunciation) ||
+    new RegExp(targetPattern).test(testPronunciation)
+  );
+}
 // helper to get the stressed part of a pronunciation
 function getStressedRhymePart(pronunciation) {
   let targetIndex = pronunciation.length;
