@@ -144,6 +144,16 @@ body {
   margin: 0.5rem 0.25rem;
 }
 
+#final-words {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  width: 80vw;
+  height: 100%;
+}
+
 @keyframes blink_input_opacity_to_prevent_scrolling_when_focus {
   0% {
     opacity: 0;
