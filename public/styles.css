@@ -1,0 +1,156 @@
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
+.hidden {
+  display: none;
+}
+#initial-state {
+  width: 80vw;
+  margin: auto;
+}
+body {
+  font-family: "Roboto Slab", serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  max-height: 100vh;
+}
+
+#wrapper {
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+#nav {
+  background-color: black;
+  color: white;
+  text-align: center;
+  padding: 0 0 0.1rem 0;
+  width: 100%;
+  font-size: 2rem;
+}
+#nav p {
+  margin: 0;
+}
+
+#first-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  height: 5rem;
+  width: 80vw;
+  margin: 0 auto;
+}
+
+#score-box,
+#timer-box {
+  width: 20%;
+  text-align: center;
+}
+#score-box p,
+#timer-box p {
+  margin: 0;
+}
+
+#score,
+#timer {
+  font-size: 2rem;
+  margin: 0;
+}
+
+#status-box {
+  width: 60%;
+  text-align: center;
+}
+
+#second-row {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+#target-box {
+  background-color: grey;
+  color: white;
+  font-size: 2rem;
+  display: inline-block;
+  padding: 0.5rem;
+  width: 80vw;
+  border-radius: 1rem;
+}
+#target-word {
+  margin: 0;
+}
+
+#user-input {
+  font-size: 2rem;
+  border: 1px solid black;
+  border-bottom: 1px solid black;
+  text-align: center;
+  height: 3.5rem;
+  outline: none;
+  font-family: inherit;
+  width: 80vw;
+  margin: 0 auto;
+  border-radius: 1rem;
+  border-bottom: 3px solid grey;
+  text-transform: uppercase;
+}
+
+#user-input:focus {
+  border-bottom: 3px solid black;
+}
+/* Style when input is focused */
+#user-input:focus ~ #wrapper {
+  height: 200px;
+}
+
+#guesses-row {
+  display: flex;
+  overflow-x: hidden;
+  max-width: 80vw;
+  background-color: lightgrey;
+  color: grey;
+  height: 3.5rem;
+  position: relative;
+  margin: 0.5rem auto;
+  padding-left: 1rem;
+}
+#guesses-row:after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0),
+    lightgrey 100%
+  );
+  width: 5em;
+  height: 3.5em;
+  right: 0;
+}
+
+#guesses-row span {
+  z-index: 1;
+  padding: 0.5rem;
+  margin: auto;
+}
+
+@keyframes blink_input_opacity_to_prevent_scrolling_when_focus {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+input[type="text"]:focus {
+  animation: blink_input_opacity_to_prevent_scrolling_when_focus 0.01s;
+}

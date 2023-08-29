@@ -1,1 +1,67 @@
-<h1>Rhyme Rush</h1>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Rhyme Rush</title>
+    <script src="main.js" defer></script>
+  </head>
+  <body>
+    <div id="nav">
+      <p>RHYME RUSH</p>
+    </div>
+    <div id="initial-state">
+      <h1>Welcome to Rhyme Rush!</h1>
+      <p>Guess as many rhyming words as you can within 2 minutes!</p>
+      <button id="start-button">Start Game</button>
+    </div>
+
+    <div id="countdown" class="hidden">
+      <h2>Get Ready!</h2>
+      <h1 id="countdown-number">3</h1>
+    </div>
+
+    <div id="end-state" class="hidden">
+      <h1>Game Over</h1>
+      <p>Your Score: <span id="final-score"></span></p>
+      <div id="final-words">
+        <!-- Filled by JavaScript -->
+      </div>
+      <button id="restart-button">Play Again</button>
+    </div>
+
+    <div id="playing-state" class="hidden">
+      <div id="wrapper">
+        <div id="first-row">
+          <div id="score-box">
+            <p>Score:</p>
+            <p id="score">0</p>
+          </div>
+          <div id="status-box">
+            <p id="status-message"></p>
+          </div>
+          <div id="timer-box">
+            <p>Time:</p>
+            <p id="timer">2:00</p>
+          </div>
+        </div>
+
+        <div id="second-row">
+          <p>Target word:</p>
+          <div id="target-box">
+            <p id="target-word">TARGET</p>
+          </div>
+        </div>
+      </div>
+
+      <input id="user-input" type="text" placeholder="" />
+
+      <div id="guesses-row"></div>
+    </div>
+  </body>
+</html>
