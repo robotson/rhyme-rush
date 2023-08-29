@@ -126,21 +126,8 @@ restartButton.addEventListener("click", function () {
 
 // Listen for form submit
 wordForm.addEventListener("submit", function (event) {
-  event.preventDefault(); // Prevents the default form submission
+  event.preventDefault();
 
-  // Your code to run when "Enter" (or "Return") is pressed and the form is submitted
-  console.log("Form was submitted, current input:", textInput.value);
-
-  // For example, you can check if the input word matches the target word
-  if (textInput.value.toUpperCase().trim() === targetWord) {
-    console.log("Correct word!");
-    // Increase score, go to next word, etc.
-    score++;
-
-    // Reset the textInput
-    textInput.value = "";
-
-    // Get the next word
-    // Your function to get the next word here
-  }
+  // Get the user input
+  const userInput = textInput.value.trim().toLowerCase();
 });
