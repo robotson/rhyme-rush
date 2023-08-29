@@ -10,7 +10,12 @@ const wordDisplay = document.getElementById("target-word");
 const statusDisplay = document.getElementById("status-message");
 const scoreDisplay = document.getElementById("score");
 const previousGuessesDisplay = document.getElementById("guesses-row");
-const NUM_SECONDS = 15;
+const NUM_SECONDS = 119;
+// convert num seconds into initial time display
+const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
+  (NUM_SECONDS + 1) % 60 < 10 ? "0" : ""
+}${(NUM_SECONDS + 1) % 60}`;
+
 let dictionary = {};
 let dictionaryLoaded = false;
 let targetWord = "";
@@ -323,7 +328,7 @@ function getClosestPronunciation(userInput) {
 function resetGameState() {
   score = 0;
   timeLeft = NUM_SECONDS;
-  document.getElementById("timer").textContent = "2:00";
+  document.getElementById("timer").textContent = INITIAL_TIME_DISPLAY;
   document.getElementById("countdown-number").textContent = "3";
   textInput.value = "";
   badGuesses.clear();
