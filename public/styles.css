@@ -6,9 +6,8 @@
 .hidden {
   display: none;
 }
-#initial-state {
-  width: 80vw;
-  margin: auto;
+.transparent {
+  opacity: 0;
 }
 body {
   font-family: "Roboto Slab", serif;
@@ -29,7 +28,7 @@ body {
 
 #nav {
   background-color: black;
-  color: white;
+  color: black;
   text-align: center;
   padding: 0 0 0.1rem 0;
   width: 100%;
@@ -44,7 +43,6 @@ body {
   justify-content: space-between;
   padding: 0.5rem;
   height: 5rem;
-  width: 80vw;
   margin: 0 auto;
 }
 
@@ -80,7 +78,6 @@ body {
   font-size: 2rem;
   display: inline-block;
   padding: 0.5rem;
-  width: 80vw;
   border-radius: 1rem;
 }
 #target-word {
@@ -95,7 +92,6 @@ body {
   height: 3.5rem;
   outline: none;
   font-family: inherit;
-  width: 80vw;
   margin: 0 auto;
   border-radius: 1rem;
   border-bottom: 3px solid grey;
@@ -105,15 +101,10 @@ body {
 #user-input:focus {
   border-bottom: 3px solid black;
 }
-/* Style when input is focused */
-#user-input:focus ~ #wrapper {
-  height: 200px;
-}
 
 #guesses-row {
   display: flex;
   overflow-x: hidden;
-  max-width: 80vw;
   background-color: lightgrey;
   color: grey;
   height: 3.5rem;
@@ -143,15 +134,102 @@ body {
   font-size: 1.12rem;
   margin: 0.5rem 0.25rem;
 }
-
+.screen-spanning {
+  width: 80vw;
+}
 #final-words {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   margin: 0 auto;
-  width: 80vw;
   height: 100%;
+}
+#final-words li {
+  text-align: left;
+}
+#initial-state {
+  padding-top: 15%;
+  position: relative;
+  margin: auto;
+  height: 75vh; /* Adjust according to your needs */
+  font-size: larger;
+}
+#start-button {
+  margin: 16pt;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  position: relative;
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  max-width: 550px;
+  text-align: left;
+}
+
+.close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #aaaaaa;
+  font-size: 28px;
+  font-weight: bold;
+  width: 40pt;
+  height: 40pt;
+  line-height: 40pt;
+  text-align: center;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-content ul {
+  padding-left: 1.5rem;
+}
+
+.modal-content div.examples {
+  font-size: small;
+}
+
+#modal-bottom-done {
+  margin-left: calc(50% - 5rem);
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+#start-button,
+#restart-button,
+#modal-bottom-done,
+#how-to-play {
+  width: 10rem;
+  height: 2.5rem;
+  font-size: 1rem;
+}
+
+#countdown {
+  padding-top: 8%;
+  font-size: larger;
+}
+
+#final-words {
+  margin-bottom: 80px;
 }
 
 @keyframes blink_input_opacity_to_prevent_scrolling_when_focus {
@@ -163,12 +241,12 @@ body {
   }
 }
 
-input[type="text"]:focus {
+#user-input:focus {
   animation: blink_input_opacity_to_prevent_scrolling_when_focus 0.01s;
 }
 
 .fade-out {
-  animation: fadeOut ease 3s;
+  animation: fadeOut ease 5s;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
 }
@@ -179,5 +257,37 @@ input[type="text"]:focus {
   }
   100% {
     opacity: 0;
+  }
+}
+
+@media only screen and (min-width: 500px) {
+  .screen-spanning {
+    max-width: 700px;
+  }
+
+  .modal-content {
+    max-width: 650px;
+    padding: 40px;
+    font-size: large;
+  }
+  .modal-content div.examples {
+    font-size: large;
+  }
+}
+
+@media only screen and (min-width: 1000px) {
+  #final-words {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-evenly;
+    max-width: 1200px;
+    font-size: large;
+    border: solid 1px grey;
+    border-radius: 1rem;
+  }
+
+  .final-category {
+    margin: 10px;
+    padding: 10px;
   }
 }

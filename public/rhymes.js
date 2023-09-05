@@ -1,5 +1,9 @@
 // Global variables
-let dict = {};
+let dictionary = {};
+let targetWord = "";
+let targetPronunciation = "";
+let targetASCIIBET = "";
+let maxEditDistance = 0;
 
 /// find string code: ".*ER[012].*ER[012].*"
 
@@ -17,286 +21,121 @@ form.addEventListener("submit", handleFormSubmit);
 // Functions
 async function getDict() {
   const response = await fetch("./dictionary.json");
-  dict = await response.json();
+  dictionary = await response.json();
+}
+function calculateScore(baseline, distance) {
+  if (baseline === 10 && distance === 0) {
+    return 30;
+  }
+  if (distance === 0) {
+    distance = 1;
+  }
+  return baseline + Math.ceil(baseline / distance);
 }
 
 function handleFormSubmit(e) {
   e.preventDefault();
-  const word = input.value.toUpperCase().trim();
-  if (!dict[word]) {
+  const userInput = input.value.toUpperCase().trim();
+  if (!dictionary[userInput]) {
     results.innerHTML = "Word not found in dictionary";
     return;
   }
+  let rhymesArray = [];
+  let offRhymesArray = [];
 
-  const rhymesArray = findUniqueRhymes(word, findRhymes);
-  const slantRhymesArray = findUniqueRhymes(word, findSlantRhymes);
-  const offRhymesArray = findUniqueRhymes(word, findOffRhymes);
+  let slantRhymesArray = [];
+  let nearRhymesArray = [];
 
-  const asciibetTargets = getAsciibetTargets(word);
-  const maxEditDistance = Math.max(...asciibetTargets.map((t) => t.length));
+  targetWord = userInput;
+  targetPronunciation = dictionary[targetWord][0];
+  targetASCIIBET = convertToASCIIBET(targetPronunciation);
+  maxEditDistance = targetASCIIBET.length;
 
-  updateEditDistances(rhymesArray, asciibetTargets);
-  updateEditDistances(slantRhymesArray, asciibetTargets);
-  updateEditDistances(offRhymesArray, asciibetTargets);
+  // select target div and fill in info
+  const targetDiv = document.querySelector(".target");
+  targetDiv.innerHTML = `<h2>Target</h2><p><span class="word">${targetWord}:</span> <span class="pronunciation">${targetPronunciation}</span> <span class="distance">${maxEditDistance}</span></p>`;
+
+  for (const testWord in dictionary) {
+    const [testPronunciation, testDistance] = getClosestPronunciation(testWord);
+    if (isPerfectRhyme(testPronunciation, targetPronunciation)) {
+      rhymesArray.push({
+        word: testWord,
+        pronunciation: testPronunciation,
+        distance: testDistance,
+        score: calculateScore(10, testDistance),
+      });
+    } else if (isOffRhyme(testPronunciation, targetPronunciation)) {
+      offRhymesArray.push({
+        word: testWord,
+        pronunciation: testPronunciation,
+        distance: testDistance,
+        score: calculateScore(7, testDistance),
+      });
+    } else if (isSlantRhyme(testPronunciation, targetPronunciation)) {
+      slantRhymesArray.push({
+        word: testWord,
+        pronunciation: testPronunciation,
+        distance: testDistance,
+        score: calculateScore(5, testDistance),
+      });
+    } else {
+      const threshold = Math.ceil(maxEditDistance / 2);
+      if (testDistance <= threshold) {
+        const points = Math.ceil(3 / testDistance);
+        nearRhymesArray.push({
+          word: testWord,
+          pronunciation: testPronunciation,
+          distance: testDistance,
+          score: points,
+        });
+      }
+    }
+  }
 
   renderResults(
     filterAndSort(rhymesArray, maxEditDistance),
+    filterAndSort(offRhymesArray, maxEditDistance),
     filterAndSort(slantRhymesArray, maxEditDistance),
-    filterAndSort(offRhymesArray, maxEditDistance)
+    filterAndSort(nearRhymesArray, maxEditDistance)
   );
-}
-
-function findUniqueRhymes(word, findFn) {
-  let uniqueRhymes = new Set();
-  for (const pronunciation of dict[word]) {
-    uniqueRhymes = new Set([...uniqueRhymes, ...findFn(pronunciation, false)]);
-  }
-  return Array.from(uniqueRhymes).filter((rhyme) => rhyme.word !== word);
 }
 
 function getAsciibetTargets(word) {
   return dict[word].map((pronunciation) => convertToASCIIBET(pronunciation));
 }
 
-function updateEditDistances(array, asciibetTargets) {
-  for (const [index, rhyme] of array.entries()) {
-    array[index].editDistance = Number.MAX_SAFE_INTEGER;
-    for (const asciibetTarget of asciibetTargets) {
-      const candidateEditDistance = editDistance(
-        asciibetTarget,
-        convertToASCIIBET(rhyme.pronunciation)
-      );
-      if (candidateEditDistance < array[index].editDistance) {
-        array[index].editDistance = candidateEditDistance;
-      }
-    }
-  }
-}
-
 function filterAndSort(array, maxEditDistance) {
-  array = array.filter((a) => a.editDistance <= maxEditDistance);
-  array.sort((a, b) => a.editDistance - b.editDistance);
+  // array = array.filter((a) => a.editDistance <= maxEditDistance);
+  array.sort((a, b) => a.distance - b.distance);
   return array;
 }
 
-function renderResults(rhymesArray, slantRhymesArray, offRhymesArray) {
+function renderResults(
+  rhymesArray,
+  offRhymesArray,
+  slantRhymesArray,
+  nearRhymesArray
+) {
   let html = generateHTMLList("Rhymes", rhymesArray);
-  html += generateHTMLList("Slant Rhymes", slantRhymesArray);
   html += generateHTMLList("Off Rhymes", offRhymesArray);
+  html += generateHTMLList("Slant Rhymes", slantRhymesArray);
+
+  html += generateHTMLList("Near Rhymes", nearRhymesArray);
   results.innerHTML = html;
 }
 
 function generateHTMLList(title, array) {
-  let html = `<h2>${title}</h2><ul>`;
-  for (const rhyme of array) {
-    html += `<li>${rhyme.word}: ${rhyme.pronunciation} - ${rhyme.editDistance}</li>`;
+  let html = `<h2>${title}</h2>`;
+  for (const [index, rhyme] of array.entries()) {
+    html += `<p><span>${index + 1}.</span> <span class="word">${
+      rhyme.word
+    }:</span> <span class="pronunciation">${
+      rhyme.pronunciation
+    }</span> <span class="distance">${
+      rhyme.distance
+    }</span> <span class="score">${rhyme.score}</span></p>`;
   }
-  return html + "</ul>";
-}
-
-// Function to find rhymes for a given pronunciation
-function findRhymes(pronunciation, expansive = false) {
-  const rhymes = [];
-  const seen = new Set();
-  // Extract the rhyme part from the input pronunciation
-  const stresses = ["1", "2", "0"];
-  let index = -1;
-  for (const stress of stresses) {
-    index = pronunciation.lastIndexOf(stress);
-    if (index > -1) {
-      break;
-    }
-  }
-
-  if (index === -1) {
-    return [];
-  }
-
-  let rhymePart = pronunciation.slice(index - 2);
-
-  // we're going to start including a more expansive definition of rhymes
-  // we want to basically start with as long of a rhyme as possible
-  // and then systematically move backwards with vowles and include more rhymes as well
-
-  // we will do this for as many vowel sounds as there are in the rhyme part
-  // to do this i need a one liner that counts the occurances of ..[012] in a string
-  // then we will use that to determine how many times to loop through the following code
-  let numVowels = (rhymePart.match(/[012]/g) || []).length;
-  console.log(numVowels);
-  while (numVowels > 0) {
-    const rhymePartEnd = expansive
-      ? rhymePart.replace(/[012]/, ".") + "$"
-      : rhymePart + "$";
-
-    console.log(rhymePartEnd);
-    for (const word in dict) {
-      // either we want to match the rhymePart exactly or we want to match the rhymePart with a wildcard at the end
-
-      // we need to loop through each pronunciation of the word
-      for (const pron of dict[word]) {
-        // we need to check if the pron matches the rhymePartWild
-        if (pron.match(rhymePartEnd) && !seen.has(word)) {
-          // if it does we need to add it to the rhymes array
-          rhymes.push({ word: word, pronunciation: pron });
-          seen.add(word);
-        }
-      }
-    }
-
-    // if the number of vowels is greater then one then lets get the index of the next vowel
-    if (numVowels > 1) {
-      rhymePart = rhymePart.slice(3);
-      index = -1;
-
-      // get the index of the next vowel regardless of stress
-      index = rhymePart.search(/[012]/);
-
-      if (index !== -1) {
-        rhymePart = rhymePart.slice(index - 2);
-      }
-    }
-    numVowels--;
-    numVowels = 0;
-  }
-
-  return rhymes;
-}
-
-// Calling function would remove duplicates and target word,
-// so we didn't do that here to keep this function single-responsibility
-
-// next we need a function to get the assonance rhymes, which we'll call slant rhymes
-
-function findSlantRhymes(pronunciation, expansive = false) {
-  const rhymes = [];
-  const seen = new Set();
-
-  // the approach we'll take here is to try to match all the vowels,
-  // then cut off the first vowel and try to match the rest again.
-
-  let index = -1;
-
-  index = pronunciation.search(/[012]/);
-
-  while (index !== -1) {
-    // split the pronunciation into hyphenated parts
-    const pronParts = pronunciation.split("-");
-
-    // for each of those parts, surround the vowel with expressions to match
-    // zero or greater amount of any of these: B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH
-    // and then join them back together with hyphens
-    let pronWild = pronParts
-      .map((part) => {
-        let vowel = part.match(/..[012]/)[0];
-
-        // surround the vowel with expressions to match
-        // zero or greater amount of any of these: B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH
-        return (
-          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*" +
-          vowel +
-          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*"
-        );
-      })
-      .join("-");
-
-    console.log(pronWild);
-
-    ///add an end of string to the pronWild
-    pronWild = pronWild + "$";
-    // now we need to loop through each word in the dictionary
-    for (const word in dict) {
-      // and each pronunciation of that word
-      for (const pron of dict[word]) {
-        // and check if the pron matches the pronWild
-        if (pron.match(pronWild) && !seen.has(word)) {
-          // if it does we need to add it to the rhymes array
-          rhymes.push({
-            word: word,
-            pronunciation: pron,
-          });
-          seen.add(word);
-        }
-      }
-    }
-
-    // now we need to cut off the first vowel and try again
-    pronunciation = pronunciation.slice(index + 1);
-    index = pronunciation.search(/[012]/);
-    //make sure to get rid of any hyphens that occur before index
-    hyphenIndex = pronunciation.search("-");
-    if (hyphenIndex !== -1 && hyphenIndex < index) {
-      pronunciation = pronunciation.slice(hyphenIndex + 1);
-    }
-    index = -1; // lol
-  }
-
-  return rhymes;
-}
-
-/// next we'll work on consonance rhymes, which we'll call "off rhymes"
-function findOffRhymes(pronunciation, expansive = false) {
-  const rhymes = [];
-  const seen = new Set();
-  // for this to work we basically want to match all the consonants
-  // but replace the vowels with wildcards
-
-  // oh, but first we want to chop off everything before the last properly stressed vowel
-  // so we need to find the index of the last properly stressed vowel
-  // and then chop off everything before that vowel's consonants (on either side)
-  let index = -1;
-  const stresses = ["1", "2", "0"];
-  for (const stress of stresses) {
-    index = pronunciation.lastIndexOf(stress);
-    if (index > -1) {
-      break;
-    }
-  }
-  // now we need to know the index of the first hyphen if there is one and if it comes before the index
-  let hyphenIndex = pronunciation.search("-");
-  if (hyphenIndex !== -1 && hyphenIndex < index) {
-    // if there is a hyphen and it comes before the index then we need to chop off everything before the hyphen
-    pronunciation = pronunciation.slice(hyphenIndex + 1);
-    pronunciation = pronunciation.trim();
-  }
-
-  // to handle rhotics lets split on any occurances of either ..[012] R or ER[012]
-  // lets do that now
-  let pronParts = pronunciation.split(/(..[012] R|ER[012])/);
-  pronParts = pronParts.map((part, index) => {
-    return part.replace(/(..[012] R|ER[012])/g, "!");
-  });
-
-  // for each of those parts we want to replace the vowels with wildcards
-  // and then join them back together with a special OR pattern to match rhotics
-  pronParts = pronParts.map((part, index) => {
-    return part.replace(/..[012]/g, ".[^R][012]");
-  });
-
-  pronParts = pronParts.map((part, index) => {
-    return part.replace("!", "(..[012] R|ER[012])");
-  });
-
-  let pronWild = pronParts.join("");
-  // add an end of string to the pronWild
-  pronWild = pronWild + "$";
-
-  // now we need to loop through each word in the dictionary
-  for (const word in dict) {
-    // and each pronunciation of that word
-    for (const pron of dict[word]) {
-      // and check if the pron matches the pronWild
-      if (pron.match(pronWild) && !seen.has(word)) {
-        // if it does we need to add it to the rhymes array
-        rhymes.push({
-          word: word,
-          pronunciation: pron,
-        });
-        seen.add(word);
-      }
-    }
-  }
-
-  return rhymes;
+  return html;
 }
 
 function convertToASCIIBET(pronunciation) {
@@ -422,4 +261,263 @@ function editDistance(str1, str2) {
   }
 
   return matrix[len1][len2];
+}
+
+// function to handle guesses with a known pronunciation
+function handleKnownPronunciation(userInput) {
+  // we assume that we haven't already guessed this word
+  // find the pronunciation that has the fewest edits from the user input
+  const [testPronunciation, testDistance] = getClosestPronunciation(userInput);
+
+  // first we check to see if the pronunciation is a perfect rhyme
+  if (isPerfectRhyme(testPronunciation, targetPronunciation)) {
+    // calculate the score, add it to the total, and update the score display
+    let points = 0;
+    if (testDistance === 0) {
+      // update status message because this is a "rich rhyme"
+      updateStatusMessage(`"${userInput}" is a rich rhyme! +30 points`);
+      updateScore(30);
+      points = 30;
+    } else {
+      // calculate bonus points for a perfect rhyme as the inverse of the edit distance
+      const bonusPoints = Math.ceil(10 / testDistance);
+
+      // update status message to show perfect rhyme, 10 points plus bonus points
+      updateStatusMessage(
+        `Perfect rhyme! +10 points +${bonusPoints} phonetic bonus`
+      );
+      // update the score
+      updateScore(10 + bonusPoints);
+      points = 10 + bonusPoints;
+    }
+    // add the word to our strong guesses set
+    strongGuesses.add(userInput);
+    // update the display of guesses
+    updatePreviousGuesses(userInput);
+    // add the word and associated info to the final guesses array
+    finalGuesses.push({
+      word: userInput,
+      pronunciation: testPronunciation,
+      distance: testDistance,
+      points: points,
+      category: "perfect",
+    });
+  } else if (isOffRhyme(testPronunciation, targetPronunciation)) {
+    // points for an offrhyme will be almost as much as a perfect rhyme, lets say, base score of 7
+    // plus a bonus for the edit distance
+    // we should be garunteed to have edit distance of at least 1 because we've already checked for perfect rhymes
+    // so we'll add 1 to the edit distance to avoid dividing by 0
+    if (testDistance === 0) {
+      testDistance = 1;
+    }
+    let points = 7;
+    const bonusPoints = Math.ceil(7 / testDistance);
+
+    // update status message to show off rhyme, 7 points plus bonus points
+    updateStatusMessage(`Off rhyme! +7 points +${bonusPoints} phonetic bonus`);
+    // update the score
+    updateScore(7 + bonusPoints);
+    points += bonusPoints;
+    // add the word to our strong guesses set
+    strongGuesses.add(userInput);
+    // update the display of guesses
+    updatePreviousGuesses(userInput);
+    // add the word and associated info to the final guesses array
+    finalGuesses.push({
+      word: userInput,
+      pronunciation: testPronunciation,
+      distance: testDistance,
+      points: points,
+      category: "off",
+    });
+  } else if (isSlantRhyme(testPronunciation, targetPronunciation)) {
+    // we'll score slant rhymes similarly, but give them a base score of 5 points. otherwise
+    // the process is the same as off rhymes
+    if (testDistance === 0) {
+      testDistance = 1;
+    }
+    let points = 5;
+    const bonusPoints = Math.ceil(5 / testDistance);
+
+    // update status message to show off rhyme, 5 points plus bonus points
+    updateStatusMessage(
+      `Slant rhyme! +5 points +${bonusPoints} phonetic bonus`
+    );
+    // update the score
+    updateScore(5 + bonusPoints);
+    points += bonusPoints;
+    // add the word to our strong guesses set
+    strongGuesses.add(userInput);
+    // update the display of guesses
+    updatePreviousGuesses(userInput);
+    // add the word and associated info to the final guesses array
+    finalGuesses.push({
+      word: userInput,
+      pronunciation: testPronunciation,
+      distance: testDistance,
+      points: points,
+      category: "slant",
+    });
+  } else {
+    // we want to express a relationship
+    // between edit distances, a "near rhyme" for our purposes
+    // shall be defined as a word that is not a perfect rhyme
+    // or and off rhyme or a slant rhyme, but is within a certain
+    // edit distance of the target word, proportional to the maximum edit distance
+    // allowed for the target word. (ie: if you didn't have to change more than 50% of the sounds)
+    // then it's a near rhyme
+    const threshold = Math.floor(maxEditDistance / 2);
+    if (testDistance <= threshold) {
+      // it's a near rhyme so we add it to strong guesses, update the score, and update the display
+      // and add it to the final guesses array
+      // we'll calculate the points as the inverse of the edit distance
+      const points = Math.ceil(3 / testDistance);
+      strongGuesses.add(userInput);
+      updateScore(points);
+      updatePreviousGuesses(userInput);
+      updateStatusMessage(`"${userInput}" is a near rhyme! +${points} points`);
+      finalGuesses.push({
+        word: userInput,
+        pronunciation: testPronunciation,
+        distance: testDistance,
+        points: points,
+        category: "near",
+      });
+    }
+    // if it's not a near rhyme, we assume we've checked all the other rhyme categories
+    // and we put it in the weak guesses set, update the status message
+    else {
+      weakGuesses.add(userInput);
+      updateStatusMessage(`"${userInput}" is not a close enough rhyme match`);
+    }
+  }
+}
+
+// compare two pronunciations to see if they are a perfect rhyme
+function isPerfectRhyme(testPronunciation, targetPronunciation) {
+  // get the stressed part of the pronunciation
+  const testStressed = getStressedRhymePart(testPronunciation);
+  const targetStressed = getStressedRhymePart(targetPronunciation);
+  return testStressed === targetStressed;
+}
+
+function isOffRhyme(testPronunciation, targetPronunciation) {
+  // Helper function to generate a regular expression pattern for off-rhymes
+  function generateOffRhymePattern(pronunciation) {
+    let index = -1;
+    const stresses = ["1", "2", "0"];
+    for (const stress of stresses) {
+      index = pronunciation.lastIndexOf(stress);
+      if (index > -1) {
+        break;
+      }
+    }
+
+    let hyphenIndex = pronunciation.search("-");
+    if (hyphenIndex !== -1 && hyphenIndex < index) {
+      pronunciation = pronunciation.slice(hyphenIndex + 1);
+      pronunciation = pronunciation.trim();
+    }
+
+    let pronParts = pronunciation.split(/(..[012] R|ER[012])/);
+    pronParts = pronParts.map((part) =>
+      part.replace(/(..[012] R|ER[012])/g, "!")
+    );
+
+    pronParts = pronParts.map((part) => part.replace(/..[012]/g, ".[^R][012]"));
+    pronParts = pronParts.map((part) =>
+      part.replace("!", "(..[012] R|ER[012])")
+    );
+
+    let pronWild = pronParts.join("");
+    pronWild = pronWild + "$";
+
+    return pronWild;
+  }
+
+  // const testPattern = generateOffRhymePattern(testPronunciation);
+  const targetPattern = generateOffRhymePattern(targetPronunciation);
+  if (new RegExp(targetPattern).test(testPronunciation)) {
+    console.log(targetPattern);
+  }
+  // Compare the two patterns
+  return (
+    // new RegExp(testPattern).test(targetPronunciation) ||
+    new RegExp(targetPattern).test(testPronunciation)
+  );
+}
+function isSlantRhyme(testPronunciation, targetPronunciation) {
+  // Helper function to generate a regular expression pattern for slant rhymes
+  function generateSlantRhymePattern(pronunciation) {
+    let index = pronunciation.search(/[012]/);
+
+    const pronParts = pronunciation.split("-");
+
+    let pronWild = pronParts
+      .map((part) => {
+        const vowelMatch = part.match(/..[012]/);
+        if (!vowelMatch) return "";
+        let vowel = vowelMatch[0];
+
+        return (
+          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*" +
+          vowel +
+          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*"
+        );
+      })
+      .join("-");
+
+    pronWild = pronWild + "$";
+
+    return pronWild;
+  }
+
+  // const testPattern = generateSlantRhymePattern(testPronunciation);
+  const targetPattern = generateSlantRhymePattern(targetPronunciation);
+
+  // Compare the two patterns
+  return (
+    // new RegExp(testPattern).test(targetPronunciation) ||
+    new RegExp(targetPattern).test(testPronunciation)
+  );
+}
+// helper to get the stressed part of a pronunciation
+function getStressedRhymePart(pronunciation) {
+  let targetIndex = pronunciation.length;
+  const stresses = ["1", "2", "0"];
+
+  for (const stress of stresses) {
+    const index = pronunciation.lastIndexOf(stress);
+    if (index !== -1 && index < targetIndex) {
+      targetIndex = index;
+      break;
+    }
+  }
+  return pronunciation.slice(targetIndex - 2);
+}
+
+// function to get the closest pronunciation to the target pronunciation from multiple dictionary options for one spelling of a word
+// return the closest pronunciation and the edit distance
+function getClosestPronunciation(userInput) {
+  // find the pronunciation that has the fewest edits from the user input
+  // there might be only one pronunciation for a word
+  let bestPronunciation = "";
+  let bestDistance = Infinity;
+  let testASCIIBET = "";
+  if (dictionary[userInput].length === 1) {
+    bestPronunciation = dictionary[userInput][0];
+    testASCIIBET = convertToASCIIBET(bestPronunciation);
+    bestDistance = editDistance(targetASCIIBET, testASCIIBET);
+    return [bestPronunciation, bestDistance];
+  }
+
+  for (const pronunciation of dictionary[userInput]) {
+    testASCIIBET = convertToASCIIBET(pronunciation);
+    const distance = editDistance(targetASCIIBET, testASCIIBET);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestPronunciation = pronunciation;
+    }
+  }
+  return [bestPronunciation, bestDistance];
 }

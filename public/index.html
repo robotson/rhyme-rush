@@ -29,10 +29,11 @@
     <div id="nav">
       <p>RHYME RUSH</p>
     </div>
-    <div id="initial-state">
+    <div id="initial-state" class="screen-spanning">
       <h1>Welcome to Rhyme Rush!</h1>
-      <p>Guess as many rhyming words as you can within the time trial!</p>
-      <button id="start-button">Start Game</button>
+      <p>Guess as many rhymes as you can before the timer runs out!</p>
+      <div><button id="start-button">Start Game</button></div>
+      <div><button id="how-to-play">How To Play</button></div>
     </div>
 
     <div id="countdown" class="hidden">
@@ -41,17 +42,17 @@
     </div>
 
     <div id="end-state" class="hidden">
-      <h1>Game Over</h1>
-      <p>Your Score: <span id="final-score"></span></p>
+      <h1>Your Score: <span id="final-score"></span></h1>
       <button id="restart-button">Play Again</button>
-      <div id="final-words">
+      <h2 id="final-target"></h2>
+      <div id="final-words" class="screen-spanning">
         <!-- Filled by JavaScript -->
       </div>
     </div>
 
     <div id="playing-state" class="hidden">
       <div id="wrapper">
-        <div id="first-row">
+        <div id="first-row" class="screen-spanning">
           <div id="score-box">
             <p>Score:</p>
             <p id="score">0</p>
@@ -67,17 +68,87 @@
 
         <div id="second-row">
           <p>Target word:</p>
-          <div id="target-box">
+          <div id="target-box" class="screen-spanning">
             <p id="target-word"></p>
           </div>
         </div>
       </div>
 
       <form id="user-input-form">
-        <input id="user-input" type="text" placeholder="" />
+        <input
+          id="user-input"
+          type="text"
+          enterkeyhint="go"
+          class="screen-spanning"
+        />
       </form>
 
-      <div id="guesses-row"></div>
+      <div id="guesses-row" class="screen-spanning transparent"></div>
+    </div>
+
+    <!-- Modal -->
+    <div id="instructionModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+
+        <h2>How To Play Rhyme Rush</h2>
+        <p>
+          <strong
+            >Come up with rhymes that match the target word to score points
+            before the timer runs out!</strong
+          >
+        </p>
+
+        <ul id="how-to-list">
+          <li>
+            Type one word at a time in the text box and hit enter to submit
+          </li>
+          <li>
+            Words that are phonetically closer are given extra bonus points
+          </li>
+        </ul>
+
+        <p><strong>Rhyme Category Examples:</strong></p>
+
+        <div class="examples">
+          <p>
+            <strong>Perfect Rhymes</strong> exactly match the stressed vowel
+            onward <br />(10 points + phonetic similarity bonus)
+          </p>
+          <ul>
+            <li>"Rhyme" - Time, Climb, Thyme, Prime</li>
+            <li>"Beginner" - Dinner, Inner, Winner</li>
+          </ul>
+
+          <p>
+            <strong>Off Rhymes</strong> share consonants but not vowels <br />(7
+            points + phonetic bonus)
+          </p>
+          <ul>
+            <li>"Rhyme" - Ram, Room, Rum, Dream, Frame</li>
+            <li>"Beginner" - Bargainer, Gainer, Goner</li>
+          </ul>
+
+          <p>
+            <strong>Slant Rhymes</strong> share vowels but not consonants
+            <br />(5 points + phonetic bonus)
+          </p>
+          <ul>
+            <li>"Rhyme" - Rice, Buy, Fire, Night, Find</li>
+            <li>"Beginner" - Bewilder, Deliver, Elixir</li>
+          </ul>
+
+          <p>
+            <strong>Near Rhymes</strong> are other close matches <br />(1 to 3
+            points)
+          </p>
+          <ul>
+            <li>"Rhyme" - Realm, Ring, Reign, Limb, Tome, Writhe</li>
+            <li>"Beginner" - Begonia, Demeanor, Burglar</li>
+          </ul>
+        </div>
+        <button id="modal-bottom-done">Done</button>
+      </div>
     </div>
   </body>
 </html>

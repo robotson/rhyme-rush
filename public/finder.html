@@ -4,8 +4,45 @@
   <head>
     <meta charset="UTF-8" />
     <title>Rhyme Rush</title>
-    <link rel="stylesheet" href="styles.css" />
     <script defer src="/rhymes.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      h1 {
+        text-align: center;
+      }
+      form {
+        text-align: center;
+      }
+      input[type="text"] {
+        width: 300px;
+        height: 30px;
+        font-size: 20px;
+        padding: 5px;
+      }
+      input[type="submit"] {
+        width: 100px;
+        height: 40px;
+        font-size: 20px;
+        padding: 5px;
+      }
+      .results,
+      .target {
+        text-align: justify;
+        font-size: 1vw;
+        width: 50vw;
+        margin: 0 auto;
+      }
+      .pronunciation {
+        font-size: 0.8em;
+        color: gray;
+      }
+      .distance {
+        font-size: 0.8em;
+        color: lightgray;
+      }
+    </style>
   </head>
   <body>
     <h1>Rhyme Finder</h1>
@@ -13,6 +50,7 @@
       <input type="text" placeholder="Enter a word to lookup..." />
       <input type="submit" value="Search" />
     </form>
+    <div class="target"></div>
     <div class="results">
       <!-- Filled by JavaScript -->
       <span></span>

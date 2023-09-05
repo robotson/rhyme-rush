@@ -1,5 +1,10 @@
 const initialState = document.getElementById("initial-state");
 const endState = document.getElementById("end-state");
+const modal = document.getElementById("instructionModal");
+const nav = document.getElementById("nav");
+const howToButton = document.getElementById("how-to-play");
+const modalCloseButton = document.getElementsByClassName("close-button")[0];
+const modalBottomDoneButton = document.getElementById("modal-bottom-done");
 const playingState = document.getElementById("playing-state");
 const startButton = document.getElementById("start-button");
 const restartButton = document.getElementById("restart-button");
@@ -10,6 +15,7 @@ const wordDisplay = document.getElementById("target-word");
 const statusDisplay = document.getElementById("status-message");
 const scoreDisplay = document.getElementById("score");
 const previousGuessesDisplay = document.getElementById("guesses-row");
+const finalTargetDisplay = document.getElementById("final-target");
 const NUM_SECONDS = 89;
 // convert num seconds into initial time display
 const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
@@ -62,6 +68,7 @@ function startCountdown() {
   // HACK TO GET AROUND MOBILE KEYBOARD ISSUE on IOS
   const dumb = document.createElement("input");
   dumb.setAttribute("type", "text");
+  dumb.setAttribute("enterkeyhint", "go");
   dumb.style.position = "absolute";
   dumb.style.opacity = 0;
   dumb.style.height = 0;
@@ -77,6 +84,8 @@ function startCountdown() {
 
   let countdownNumber = 2;
   const countdownElement = document.getElementById("countdown-number");
+
+  nav.style.color = "white";
 
   initialState.classList.add("hidden");
   document.getElementById("countdown").classList.remove("hidden");
@@ -102,6 +111,7 @@ function startTimer() {
 
     if (timeLeft <= 0) {
       clearInterval(timer);
+      textInput.blur();
       endGame();
     }
 
@@ -122,6 +132,7 @@ function startGame() {
   // get a random word from the starter words array
   targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
   // normalize the word
+  // targetWord = "rhyme";
   targetWord = normalize(targetWord);
   // make sure it's in the dictionary
   while (!pronunciationExists(targetWord)) {
@@ -134,6 +145,8 @@ function startGame() {
   targetASCIIBET = convertToASCIIBET(targetPronunciation);
   maxEditDistance = targetASCIIBET.length;
 }
+
+// called when the timer runs out
 function endGame() {
   playingState.classList.add("hidden");
   endState.classList.remove("hidden");
@@ -171,29 +184,59 @@ function endGame() {
 
   // display the final guesses
   // build a bulky html string to put in the DOM
-  let html = `<h2>Target word: ${targetWord}</h2>`;
+  finalTargetDisplay.textContent = `Target word: ${targetWord}`;
+  let html = "";
   const guessCategories = [
-    { name: "Perfect Rhymes", guesses: perfectGuesses },
-    { name: "Off Rhymes", guesses: offGuesses },
-    { name: "Slant Rhymes", guesses: slantGuesses },
-    { name: "Near Rhymes", guesses: nearGuesses },
+    {
+      name: "Perfect Rhymes",
+      guesses: perfectGuesses,
+      className: "perfect-final",
+    },
+    { name: "Off Rhymes", guesses: offGuesses, className: "off-final" },
+    { name: "Slant Rhymes", guesses: slantGuesses, className: "slant-final" },
+    { name: "Near Rhymes", guesses: nearGuesses, className: "near-final" },
   ];
   for (const category of guessCategories) {
     if (category.guesses.length > 0) {
+      html += `<div class="final-category ${category.className}">`;
       html += `<h3>${category.name}</h3>`;
       html += "<ul>";
       for (const guess of category.guesses) {
-        html += `<li>${guess.word} - ${guess.points} points</li>`;
+        html += `<li>${guess.word} - ${guess.points} pts</li>`;
       }
-      html += "</ul>";
+      html += "</ul></div>";
     }
   }
   document.getElementById("final-words").innerHTML = html;
 }
+
+// EVENT LISTENERS
+howToButton.addEventListener("click", function () {
+  modal.style.display = "block";
+});
+modalCloseButton.addEventListener("click", function () {
+  modal.style.display = "none";
+});
+modalBottomDoneButton.addEventListener("click", function () {
+  modal.style.display = "none";
+});
+function closeModalIfClickedOutside(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+// Listen for clicks (desktop)
+window.addEventListener("click", closeModalIfClickedOutside);
+
+// Listen for taps (mobile)
+window.addEventListener("touchstart", closeModalIfClickedOutside);
+
 // Listen for the start button to be clicked
 startButton.addEventListener("click", startCountdown);
 // Listen for the restart button to be clicked
 restartButton.addEventListener("click", function () {
+  nav.style.color = "black";
   endState.classList.add("hidden");
   initialState.classList.remove("hidden");
   resetGameState();
@@ -211,6 +254,7 @@ wordForm.addEventListener("submit", function (event) {
   // prevent submitting the same word as the target word
   if (userInput === targetWord) {
     updateStatusMessage("You can't rhyme with the target word!");
+    textInput.value = "";
     return;
   }
 
@@ -342,11 +386,14 @@ function handleKnownPronunciation(userInput) {
     // edit distance of the target word, proportional to the maximum edit distance
     // allowed for the target word. (ie: if you didn't have to change more than 50% of the sounds)
     // then it's a near rhyme
-    const threshold = Math.floor(maxEditDistance / 2);
+    const threshold = Math.ceil(maxEditDistance / 2);
     if (testDistance <= threshold) {
       // it's a near rhyme so we add it to strong guesses, update the score, and update the display
       // and add it to the final guesses array
       // we'll calculate the points as the inverse of the edit distance
+      if (testDistance === 0) {
+        testDistance = 1;
+      }
       const points = Math.ceil(3 / testDistance);
       strongGuesses.add(userInput);
       updateScore(points);
@@ -504,8 +551,12 @@ function resetGameState() {
   document.getElementById("countdown-number").textContent = "3";
   textInput.value = "";
   badGuesses.clear();
+  strongGuesses.clear();
+  weakGuesses.clear();
+  finalGuesses.length = 0;
   targetASCIIBET = "";
   targetPronunciation = "";
+  finalTargetDisplay.textContent = "";
   targetWord = "";
   maxEditDistance = 0;
   clearInterval(timer);
@@ -513,7 +564,7 @@ function resetGameState() {
   scoreDisplay.textContent = score;
   previousGuessesDisplay.innerHTML = "";
   statusDisplay.textContent = "";
-  finalGuesses.length = 0;
+  previousGuessesDisplay.classList.add("transparent");
   document.getElementById("final-words").innerHTML = "";
 }
 function normalize(word) {
@@ -676,6 +727,10 @@ function updateScore(points) {
 // function to update the previous guesses display
 
 function updatePreviousGuesses(guess) {
+  if (previousGuessesDisplay.childElementCount === 0) {
+    previousGuessesDisplay.classList.remove("transparent");
+  }
+
   const guessElement = document.createElement("span");
   guessElement.textContent = guess;
   // insert at the beginning of the list
