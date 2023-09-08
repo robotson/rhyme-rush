@@ -215,12 +215,20 @@ body {
   margin-top: 16px;
 }
 #start-button,
-#restart-button,
 #modal-bottom-done,
 #how-to-play {
   width: 10rem;
   height: 2.5rem;
   font-size: 1rem;
+}
+#restart-button,
+#challenge-button {
+  font-size: 1rem;
+  height: 2.5rem;
+  width: 12rem;
+}
+#challenge-button {
+  margin-left: 1rem;
 }
 
 #countdown {
