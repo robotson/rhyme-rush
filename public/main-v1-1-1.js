@@ -251,23 +251,14 @@ function endGame() {
   document.getElementById(
     "challenge-paragraph"
   ).textContent = `This link loads Rhyme Rush with the target word you just played: "${targetWord}".`;
+  // recreate the challenge link just in case we got to the page from a weird state
+  challengeLink = `${baseURL}/challenge/`;
   challengeLink += btoa(targetWord);
   challengeLinkInput.value = challengeLink;
   challengeMessage.value = `I got ${score} points in Rhyme Rush! Can you beat my score? ${challengeLink}`;
 }
 
 // EVENT LISTENERS
-
-window.onpopstate = function (event) {
-  if (window.location.pathname === "/") {
-    // Go back to the initial game state
-    resetGameState();
-  } else if (window.location.pathname.startsWith("/challenge/")) {
-    // Parse the challenge ID and go to that state
-    resetGameState();
-    handleChallengeWord();
-  }
-};
 
 howToButton.addEventListener("click", function () {
   modal.style.display = "block";
