@@ -265,6 +265,29 @@ body {
   margin-top: 16px;
 }
 
+/* challenge modal */
+
+#challenge-message {
+  width: 100%;
+  font-size: medium;
+  margin-bottom: 16px;
+}
+.challenge-modal-button-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px; /* Or whatever spacing you prefer */
+}
+
+#copy-challenge-message,
+#copy-challenge-link {
+  width: 75%;
+  height: 2.5rem;
+  font-size: 1rem;
+  padding: 10px;
+  cursor: pointer;
+}
+
 /* Animations */
 
 #user-input:focus {

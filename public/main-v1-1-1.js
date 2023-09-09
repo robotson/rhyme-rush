@@ -1,6 +1,11 @@
 const initialState = document.getElementById("initial-state");
 const endState = document.getElementById("end-state");
-const modal = document.getElementById("instructionModal");
+const modal = document.getElementById("instruction-modal");
+const challengeModal = document.getElementById("challenge-modal");
+const challengeFriendButton = document.getElementById("challenge-button");
+const closeChallengeModalButton = document.getElementById(
+  "close-challenge-modal"
+);
 const nav = document.getElementById("nav");
 const howToButton = document.getElementById("how-to-play");
 const modalCloseButton = document.getElementsByClassName("close-button")[0];
@@ -16,7 +21,7 @@ const statusDisplay = document.getElementById("status-message");
 const scoreDisplay = document.getElementById("score");
 const previousGuessesDisplay = document.getElementById("guesses-row");
 const finalTargetDisplay = document.getElementById("final-target");
-const NUM_SECONDS = 89;
+const NUM_SECONDS = 1;
 // convert num seconds into initial time display
 const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
   (NUM_SECONDS + 1) % 60 < 10 ? "0" : ""
@@ -220,10 +225,36 @@ modalCloseButton.addEventListener("click", function () {
 modalBottomDoneButton.addEventListener("click", function () {
   modal.style.display = "none";
 });
+
 function closeModalIfClickedOutside(event) {
   if (event.target == modal) {
     modal.style.display = "none";
+    return;
   }
+  if (event.target == challengeModal) {
+    challengeModal.style.display = "none";
+    return;
+  }
+}
+// Open the Challenge link modal
+challengeFriendButton.addEventListener("click", () => {
+  challengeModal.style.display = "block";
+});
+
+// Close the Challenge link modal
+closeChallengeModalButton.addEventListener("click", () => {
+  challengeModal.style.display = "none";
+});
+
+function copyText(type) {
+  console.log("copying text");
+  // Your code to copy text here
+  const tooltip = document.getElementById(`tooltip-${type}`);
+  console.log(tooltip);
+  tooltip.style.visibility = "visible";
+  setTimeout(() => {
+    tooltip.style.visibility = "hidden";
+  }, 2000); // Hide after 2 seconds
 }
 
 // Listen for clicks (desktop)
@@ -280,8 +311,6 @@ wordForm.addEventListener("submit", function (event) {
   }
   textInput.value = "";
 });
-
-// UTILITY FUNCTIONS
 
 // function to handle guesses with a known pronunciation
 function handleKnownPronunciation(userInput) {
@@ -416,14 +445,13 @@ function handleKnownPronunciation(userInput) {
   }
 }
 
-// compare two pronunciations to see if they are a perfect rhyme
+// RHYME CHECKING FUNCTIONS
 function isPerfectRhyme(testPronunciation, targetPronunciation) {
   // get the stressed part of the pronunciation
   const testStressed = getStressedRhymePart(testPronunciation);
   const targetStressed = getStressedRhymePart(targetPronunciation);
   return testStressed === targetStressed;
 }
-
 function isOffRhyme(testPronunciation, targetPronunciation) {
   // Helper function to generate a regular expression pattern for off-rhymes
   function generateOffRhymePattern(pronunciation) {
