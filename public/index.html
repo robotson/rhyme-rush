@@ -155,17 +155,19 @@
     <div id="challenge-modal" class="modal">
       <div class="modal-content">
         <span id="close-challenge-modal" class="close-button">&times;</span>
-        <h2>Challenge a Friend!</h2>
+        <h2>Challenge a Friend</h2>
 
         <!-- Challenge Message Section -->
         <div class="modal-section">
-          <p>
+          <p id="challenge-paragraph">
             Feeling competitive? Challenge your friends to beat your score! Copy
             the message below to invite them.
           </p>
           <textarea id="challenge-message" rows="3" cols="50" readonly>
 I scored 500 points in Rhyme Rush! Can you beat my score? https://rhymerush.com/challenge/</textarea
           >
+          <input id="challenge-link" type="text" readonly
+          value="https://rhymerush.com/challenge" / class="hidden">
           <div class="challenge-modal-button-group">
             <button id="copy-challenge-message">Copy Challenge Message</button>
             <button id="copy-challenge-link">Copy Link Only</button>

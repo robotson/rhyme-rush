@@ -21,6 +21,12 @@ const statusDisplay = document.getElementById("status-message");
 const scoreDisplay = document.getElementById("score");
 const previousGuessesDisplay = document.getElementById("guesses-row");
 const finalTargetDisplay = document.getElementById("final-target");
+const challengeLinkInput = document.getElementById("challenge-link");
+const challengeMessage = document.getElementById("challenge-message");
+const copyChallengeLinkButton = document.getElementById("copy-challenge-link");
+const copyChallengeMessageButton = document.getElementById(
+  "copy-challenge-message"
+);
 const NUM_SECONDS = 1;
 // convert num seconds into initial time display
 const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
@@ -35,6 +41,7 @@ let dictionaryLoaded = false;
 let targetWord = "";
 let targetPronunciation = "";
 let targetASCIIBET = "";
+let challengeLink = `${window.location.href.split("?")[0]}challenge/`;
 let maxEditDistance = 0;
 let statusTimeoutID;
 let countdownInterval;
@@ -124,15 +131,12 @@ function startTimer() {
   }, 1000);
 }
 function startGame() {
+  // hide the countdown and show the playing state
   initialState.classList.add("hidden");
   playingState.classList.remove("hidden");
+  // start the timer
   document.getElementById("timer").textContent = INITIAL_TIME_DISPLAY;
   startTimer();
-  // Get a random word from the dictionary
-  if (!dictionaryLoaded) return;
-  // const words = Object.keys(dictionary);
-  // targetWord = words[Math.floor(Math.random() * words.length)];
-  // wordDisplay.textContent = targetWord;
 
   // get a random word from the starter words array
   targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
@@ -173,17 +177,16 @@ function endGame() {
   const perfectGuesses = finalGuesses.filter(
     (guess) => guess.category === "perfect"
   );
-  perfectGuesses.sort((a, b) => {
-    if (a.word < b.word) return -1;
-    if (a.word > b.word) return 1;
-    return 0;
-  });
+  perfectGuesses.sort(pointsSort);
+
   const offGuesses = finalGuesses.filter((guess) => guess.category === "off");
   offGuesses.sort(pointsSort);
+
   const slantGuesses = finalGuesses.filter(
     (guess) => guess.category === "slant"
   );
   slantGuesses.sort(pointsSort);
+
   const nearGuesses = finalGuesses.filter((guess) => guess.category === "near");
   nearGuesses.sort(pointsSort);
 
@@ -213,6 +216,14 @@ function endGame() {
     }
   }
   document.getElementById("final-words").innerHTML = html;
+
+  // update the challenge link
+  document.getElementById(
+    "challenge-paragraph"
+  ).textContent = `Feeling competitive? Challenge a friend to beat your score! This link loads Rhyme Rush with the target word you just played: "${targetWord}".`;
+  challengeLink += btoa(targetWord);
+  challengeLinkInput.value = challengeLink;
+  challengeMessage.value = `I scored ${score} points in Rhyme Rush! Can you beat my score? ${challengeLink}`;
 }
 
 // EVENT LISTENERS
@@ -246,16 +257,40 @@ closeChallengeModalButton.addEventListener("click", () => {
   challengeModal.style.display = "none";
 });
 
-function copyText(type) {
-  console.log("copying text");
-  // Your code to copy text here
-  const tooltip = document.getElementById(`tooltip-${type}`);
-  console.log(tooltip);
-  tooltip.style.visibility = "visible";
-  setTimeout(() => {
-    tooltip.style.visibility = "hidden";
-  }, 2000); // Hide after 2 seconds
+// helper for copying the challenge message to the clipboard
+async function copyContent(element) {
+  try {
+    await navigator.clipboard.writeText(element.value);
+    return true;
+  } catch (err) {
+    console.error("Failed to copy: ", err);
+    return false;
+  }
 }
+// helper for changing the button text to "Copied!" for 3 seconds and then back to the original text
+function changeButtonText(button) {
+  const originalText = button.textContent;
+  button.textContent = "Copied!";
+  setTimeout(() => {
+    button.textContent = originalText;
+  }, 3000);
+}
+
+// Copy the challenge link to the clipboard
+copyChallengeLinkButton.addEventListener("click", () => {
+  const copied = copyContent(challengeLinkInput);
+  if (copied) {
+    changeButtonText(copyChallengeLinkButton);
+  }
+});
+
+// Copy the challenge message to the clipboard
+copyChallengeMessageButton.addEventListener("click", () => {
+  const copied = copyContent(challengeMessage);
+  if (copied) {
+    changeButtonText(copyChallengeMessageButton);
+  }
+});
 
 // Listen for clicks (desktop)
 window.addEventListener("click", closeModalIfClickedOutside);
@@ -594,6 +629,7 @@ function resetGameState() {
   statusDisplay.textContent = "";
   previousGuessesDisplay.classList.add("transparent");
   document.getElementById("final-words").innerHTML = "";
+  challengeLink = `${window.location.href.split("?")[0]}/challenge/`;
 }
 function normalize(word) {
   return word.trim().toUpperCase();
