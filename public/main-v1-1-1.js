@@ -33,15 +33,16 @@ const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
   (NUM_SECONDS + 1) % 60 < 10 ? "0" : ""
 }${(NUM_SECONDS + 1) % 60}`;
 ``;
+const baseURL = window.location.origin;
 // array of starter words
 let starterWords = ["RHYME", "TIME", "RUSH", "CRUSH"];
-
+let isChallengeMode = false;
 let dictionary = {};
 let dictionaryLoaded = false;
 let targetWord = "";
 let targetPronunciation = "";
 let targetASCIIBET = "";
-let challengeLink = `${window.location.href.split("?")[0]}challenge/`;
+let challengeLink = `${baseURL}/challenge/`;
 let maxEditDistance = 0;
 let statusTimeoutID;
 let countdownInterval;
@@ -60,6 +61,7 @@ async function loadDictionary() {
     const response = await fetch("./dictionary.json");
     dictionary = await response.json();
     dictionaryLoaded = true;
+    handleChallengeWord();
   } catch (error) {
     console.error("Error loading dictionaries:", error);
     alert("Error loading dictionaries. Please try refreshing the page.");
@@ -73,6 +75,28 @@ async function loadStarterWords() {
   } catch (error) {
     console.error("Error loading starter words:", error);
     alert("Error loading starter words. Please try refreshing the page.");
+  }
+}
+
+// function to check if the user is in challenge mode
+// we check the url for a base64 encoded word
+// if it's there, we decode it and set the target word to that word
+// and set the challenge mode flag to true
+function handleChallengeWord() {
+  const pathArray = window.location.pathname.split("/");
+  if (pathArray.length > 2 && pathArray[1] === "challenge") {
+    const base64Word = pathArray[2];
+    const decodedWord = atob(base64Word);
+    // use our helper funcs to normalize and verify the word
+    const normalizedWord = normalize(decodedWord);
+    if (pronunciationExists(normalizedWord)) {
+      targetWord = normalizedWord;
+      isChallengeMode = true;
+    } else {
+      // if the word is not in the dictionary, we need to notify
+      // the user that the challenge link is invalid, and send them back to the home page
+      // TODO: add a message to the home page that the challenge link is invalid
+    }
   }
 }
 
@@ -138,15 +162,21 @@ function startGame() {
   document.getElementById("timer").textContent = INITIAL_TIME_DISPLAY;
   startTimer();
 
-  // get a random word from the starter words array
-  targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
-  // normalize the word
-  // targetWord = "rhyme";
-  targetWord = normalize(targetWord);
-  // make sure it's in the dictionary
-  while (!pronunciationExists(targetWord)) {
+  // we have a routine for setting the target word
+  // either we're in challenge mode and the target word is set
+  // or we're in normal mode and we need to set the target word
+  if (!isChallengeMode) {
+    // get a random word from the starter words array
     targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
+    // normalize the word
+    // targetWord = "rhyme";
     targetWord = normalize(targetWord);
+    // make sure it's in the dictionary
+    while (!pronunciationExists(targetWord)) {
+      targetWord =
+        starterWords[Math.floor(Math.random() * starterWords.length)];
+      targetWord = normalize(targetWord);
+    }
   }
   wordDisplay.textContent = targetWord;
   // most common pronunciation is the first one
@@ -220,13 +250,25 @@ function endGame() {
   // update the challenge link
   document.getElementById(
     "challenge-paragraph"
-  ).textContent = `Feeling competitive? Challenge a friend to beat your score! This link loads Rhyme Rush with the target word you just played: "${targetWord}".`;
+  ).textContent = `This link loads Rhyme Rush with the target word you just played: "${targetWord}".`;
   challengeLink += btoa(targetWord);
   challengeLinkInput.value = challengeLink;
-  challengeMessage.value = `I scored ${score} points in Rhyme Rush! Can you beat my score? ${challengeLink}`;
+  challengeMessage.value = `I got ${score} points in Rhyme Rush! Can you beat my score? ${challengeLink}`;
 }
 
 // EVENT LISTENERS
+
+window.onpopstate = function (event) {
+  if (window.location.pathname === "/") {
+    // Go back to the initial game state
+    resetGameState();
+  } else if (window.location.pathname.startsWith("/challenge/")) {
+    // Parse the challenge ID and go to that state
+    resetGameState();
+    handleChallengeWord();
+  }
+};
+
 howToButton.addEventListener("click", function () {
   modal.style.display = "block";
 });
@@ -292,28 +334,19 @@ copyChallengeMessageButton.addEventListener("click", () => {
   }
 });
 
-// Listen for clicks (desktop)
+// Listen for clicks (desktop) and for taps (mobile) outside modals
 window.addEventListener("click", closeModalIfClickedOutside);
-
-// Listen for taps (mobile)
 window.addEventListener("touchstart", closeModalIfClickedOutside);
 
 // Listen for the start button to be clicked
 startButton.addEventListener("click", startCountdown);
 // Listen for the restart button to be clicked
-restartButton.addEventListener("click", function () {
-  nav.style.color = "black";
-  endState.classList.add("hidden");
-  initialState.classList.remove("hidden");
-  resetGameState();
-  // Reset your game logic here
-});
+restartButton.addEventListener("click", resetGameState);
 
 // Listen for form submit
 wordForm.addEventListener("submit", function (event) {
   event.preventDefault();
-
-  // Get the user input
+  // Get the user input and normalize it
   const userInput = normalize(textInput.value);
   // prevent them from submitting an empty string
   if (userInput === "") return;
@@ -606,13 +639,39 @@ function getClosestPronunciation(userInput) {
   return [bestPronunciation, bestDistance];
 }
 
-// reset all the game state variables
+/**
+ * Reset all game state variables to their initial values.
+ * If the game is in challenge mode, also reset the URL and challenge link.
+ */
 function resetGameState() {
+  // If in challenge mode, reset URL and challenge link
+  if (isChallengeMode) {
+    // Reset the challenge link
+    challengeLink = `${baseURL}/challenge/`;
+
+    // Reset the challenge mode flag
+    isChallengeMode = false;
+
+    // Update the URL to the root
+    window.history.pushState({}, "", "/");
+  }
+
+  // Reset game counters and scores
   score = 0;
   timeLeft = NUM_SECONDS;
+
+  // Reset UI elements
+  nav.style.color = "black";
   document.getElementById("timer").textContent = INITIAL_TIME_DISPLAY;
   document.getElementById("countdown-number").textContent = "3";
   textInput.value = "";
+  statusDisplay.textContent = "";
+  scoreDisplay.textContent = score;
+  previousGuessesDisplay.innerHTML = "";
+  previousGuessesDisplay.classList.add("transparent");
+  document.getElementById("final-words").innerHTML = "";
+
+  // Reset game state variables
   badGuesses.clear();
   strongGuesses.clear();
   weakGuesses.clear();
@@ -622,15 +681,16 @@ function resetGameState() {
   finalTargetDisplay.textContent = "";
   targetWord = "";
   maxEditDistance = 0;
+
+  // Clear any existing intervals
   clearInterval(timer);
   clearInterval(countdownInterval);
-  scoreDisplay.textContent = score;
-  previousGuessesDisplay.innerHTML = "";
-  statusDisplay.textContent = "";
-  previousGuessesDisplay.classList.add("transparent");
-  document.getElementById("final-words").innerHTML = "";
-  challengeLink = `${window.location.href.split("?")[0]}/challenge/`;
+
+  // Reset visibility of game sections
+  endState.classList.add("hidden");
+  initialState.classList.remove("hidden");
 }
+
 function normalize(word) {
   return word.trim().toUpperCase();
 }

@@ -21,9 +21,10 @@
       href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles-v1-1-1.css" />
+    <base href="/" />
+    <link rel="stylesheet" href="/styles-v1-1-1.css" />
     <title>Rhyme Rush</title>
-    <script src="main-v1-1-1.js" defer></script>
+    <script src="/main-v1-1-1.js" defer></script>
   </head>
   <body>
     <div id="nav">
@@ -159,13 +160,14 @@
 
         <!-- Challenge Message Section -->
         <div class="modal-section">
-          <p id="challenge-paragraph">
-            Feeling competitive? Challenge your friends to beat your score! Copy
-            the message below to invite them.
-          </p>
-          <textarea id="challenge-message" rows="3" cols="50" readonly>
-I scored 500 points in Rhyme Rush! Can you beat my score? https://rhymerush.com/challenge/</textarea
-          >
+          <p>Feeling competitive? Challenge your friends to beat your score!</p>
+          <p id="challenge-paragraph"></p>
+          <textarea
+            id="challenge-message"
+            rows="3"
+            cols="50"
+            readonly
+          ></textarea>
           <input id="challenge-link" type="text" readonly
           value="https://rhymerush.com/challenge" / class="hidden">
           <div class="challenge-modal-button-group">
