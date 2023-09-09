@@ -21,7 +21,7 @@ body {
   display: flex;
   flex-direction: column;
   text-align: center;
-  max-height: 100vh;
+  max-height: 99vh;
 }
 
 /* Utility classes */
@@ -33,6 +33,21 @@ body {
 }
 .screen-spanning {
   width: 80vw;
+}
+
+.collapsed {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin: 0;
+}
+
+.expanded {
+  height: 1.5em;
+  opacity: 1;
+  margin: 0.5em 0;
+  transition: height 0.3s ease-in-out, opacity 0.3s ease-in-out,
+    margin 0.3s ease-in-out;
 }
 
 /* Layout and structure */
@@ -80,6 +95,14 @@ body {
   width: 10rem;
   height: 2.5rem;
   font-size: 1rem;
+}
+
+#welcome-challenge-message {
+  font-size: larger;
+  font-weight: bold;
+}
+#how-to-play {
+  margin-bottom: 3em;
 }
 
 /* Main game screen elements */

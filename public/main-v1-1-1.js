@@ -27,7 +27,13 @@ const copyChallengeLinkButton = document.getElementById("copy-challenge-link");
 const copyChallengeMessageButton = document.getElementById(
   "copy-challenge-message"
 );
-const NUM_SECONDS = 1;
+const welcomeChallengeMessage = document.getElementById(
+  "welcome-challenge-message"
+);
+const warningChallengeMessage = document.getElementById(
+  "warning-challenge-message"
+);
+const NUM_SECONDS = 89;
 // convert num seconds into initial time display
 const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
   (NUM_SECONDS + 1) % 60 < 10 ? "0" : ""
@@ -77,27 +83,44 @@ async function loadStarterWords() {
     alert("Error loading starter words. Please try refreshing the page.");
   }
 }
-
-// function to check if the user is in challenge mode
-// we check the url for a base64 encoded word
-// if it's there, we decode it and set the target word to that word
-// and set the challenge mode flag to true
 function handleChallengeWord() {
   const pathArray = window.location.pathname.split("/");
   if (pathArray.length > 2 && pathArray[1] === "challenge") {
     const base64Word = pathArray[2];
-    const decodedWord = atob(base64Word);
-    // use our helper funcs to normalize and verify the word
-    const normalizedWord = normalize(decodedWord);
-    if (pronunciationExists(normalizedWord)) {
-      targetWord = normalizedWord;
-      isChallengeMode = true;
-    } else {
-      // if the word is not in the dictionary, we need to notify
-      // the user that the challenge link is invalid, and send them back to the home page
-      // TODO: add a message to the home page that the challenge link is invalid
+
+    // this can throw an error if the word is not a valid base64 string
+    // so we wrap it in a try/catch
+    try {
+      const decodedWord = atob(base64Word);
+      const normalizedWord = normalize(decodedWord);
+      if (pronunciationExists(normalizedWord)) {
+        targetWord = normalizedWord;
+        isChallengeMode = true;
+        // toggle the visibility of the welcome message and the start button
+        welcomeChallengeMessage.classList.remove("collapsed");
+        welcomeChallengeMessage.classList.add("expanded");
+      } else {
+        // if the word is not in the dictionary, we need to notify
+        // the user that the challenge link is invalid
+        handleBadChallengeLink();
+      }
+    } catch (error) {
+      handleBadChallengeLink();
     }
   }
+}
+function handleBadChallengeLink() {
+  // When an invalid challenge link is accessed
+  gtag("event", "invalid_challenge", {
+    event_category: "error",
+    event_label: "Invalid Challenge Link",
+  });
+
+  // toggle the visibility of the warning message and the start button
+  warningChallengeMessage.classList.remove("collapsed");
+  warningChallengeMessage.classList.add("expanded");
+  // update the url to remove the invalid word
+  window.history.pushState({}, "", "/");
 }
 
 function startCountdown() {
@@ -155,6 +178,13 @@ function startTimer() {
   }, 1000);
 }
 function startGame() {
+  // When game starts
+  gtag("event", "game_start", {
+    event_category: "game",
+    event_label: "Game Started",
+    value: isChallengeMode ? "challenge" : "normal", // Assuming you have a boolean flag for challenge mode
+  });
+
   // hide the countdown and show the playing state
   initialState.classList.add("hidden");
   playingState.classList.remove("hidden");
@@ -184,9 +214,15 @@ function startGame() {
   targetASCIIBET = convertToASCIIBET(targetPronunciation);
   maxEditDistance = targetASCIIBET.length;
 }
-
 // called when the timer runs out
 function endGame() {
+  // When game ends
+  gtag("event", "game_end", {
+    event_category: "game",
+    event_label: "Game Ended",
+    value: score, // Assuming you have a variable to store the final score
+  });
+
   playingState.classList.add("hidden");
   endState.classList.remove("hidden");
   finalScore.textContent = score;
@@ -247,129 +283,12 @@ function endGame() {
   }
   document.getElementById("final-words").innerHTML = html;
 
-  // update the challenge link
-  document.getElementById(
-    "challenge-paragraph"
-  ).textContent = `This link loads Rhyme Rush with the target word you just played: "${targetWord}".`;
   // recreate the challenge link just in case we got to the page from a weird state
   challengeLink = `${baseURL}/challenge/`;
   challengeLink += btoa(targetWord);
   challengeLinkInput.value = challengeLink;
   challengeMessage.value = `I got ${score} points in Rhyme Rush! Can you beat my score? ${challengeLink}`;
 }
-
-// EVENT LISTENERS
-
-howToButton.addEventListener("click", function () {
-  modal.style.display = "block";
-});
-modalCloseButton.addEventListener("click", function () {
-  modal.style.display = "none";
-});
-modalBottomDoneButton.addEventListener("click", function () {
-  modal.style.display = "none";
-});
-
-function closeModalIfClickedOutside(event) {
-  if (event.target == modal) {
-    modal.style.display = "none";
-    return;
-  }
-  if (event.target == challengeModal) {
-    challengeModal.style.display = "none";
-    return;
-  }
-}
-// Open the Challenge link modal
-challengeFriendButton.addEventListener("click", () => {
-  challengeModal.style.display = "block";
-});
-
-// Close the Challenge link modal
-closeChallengeModalButton.addEventListener("click", () => {
-  challengeModal.style.display = "none";
-});
-
-// helper for copying the challenge message to the clipboard
-async function copyContent(element) {
-  try {
-    await navigator.clipboard.writeText(element.value);
-    return true;
-  } catch (err) {
-    console.error("Failed to copy: ", err);
-    return false;
-  }
-}
-// helper for changing the button text to "Copied!" for 3 seconds and then back to the original text
-function changeButtonText(button) {
-  const originalText = button.textContent;
-  button.textContent = "Copied!";
-  setTimeout(() => {
-    button.textContent = originalText;
-  }, 3000);
-}
-
-// Copy the challenge link to the clipboard
-copyChallengeLinkButton.addEventListener("click", () => {
-  const copied = copyContent(challengeLinkInput);
-  if (copied) {
-    changeButtonText(copyChallengeLinkButton);
-  }
-});
-
-// Copy the challenge message to the clipboard
-copyChallengeMessageButton.addEventListener("click", () => {
-  const copied = copyContent(challengeMessage);
-  if (copied) {
-    changeButtonText(copyChallengeMessageButton);
-  }
-});
-
-// Listen for clicks (desktop) and for taps (mobile) outside modals
-window.addEventListener("click", closeModalIfClickedOutside);
-window.addEventListener("touchstart", closeModalIfClickedOutside);
-
-// Listen for the start button to be clicked
-startButton.addEventListener("click", startCountdown);
-// Listen for the restart button to be clicked
-restartButton.addEventListener("click", resetGameState);
-
-// Listen for form submit
-wordForm.addEventListener("submit", function (event) {
-  event.preventDefault();
-  // Get the user input and normalize it
-  const userInput = normalize(textInput.value);
-  // prevent them from submitting an empty string
-  if (userInput === "") return;
-  // prevent submitting the same word as the target word
-  if (userInput === targetWord) {
-    updateStatusMessage("You can't rhyme with the target word!");
-    textInput.value = "";
-    return;
-  }
-
-  if (pronunciationExists(userInput)) {
-    // see if the user has already guessed this word
-    if (strongGuesses.has(userInput)) {
-      updateStatusMessage(`Already found "${userInput}"`);
-    } else if (weakGuesses.has(userInput)) {
-      updateStatusMessage(`"${userInput}" already guessed`);
-    } else {
-      handleKnownPronunciation(userInput);
-    }
-  } else {
-    // see if the user has already guessed this word
-    if (badGuesses.has(userInput)) {
-      updateStatusMessage(`Already tried unknown word "${userInput}"`);
-    } else {
-      // update status to show that the word is not in the dictionary
-      updateStatusMessage(`"${userInput}" not found in dictionary`);
-      // add the word to the bad guesses set
-      badGuesses.add(userInput);
-    }
-  }
-  textInput.value = "";
-});
 
 // function to handle guesses with a known pronunciation
 function handleKnownPronunciation(userInput) {
@@ -503,133 +422,6 @@ function handleKnownPronunciation(userInput) {
     }
   }
 }
-
-// RHYME CHECKING FUNCTIONS
-function isPerfectRhyme(testPronunciation, targetPronunciation) {
-  // get the stressed part of the pronunciation
-  const testStressed = getStressedRhymePart(testPronunciation);
-  const targetStressed = getStressedRhymePart(targetPronunciation);
-  return testStressed === targetStressed;
-}
-function isOffRhyme(testPronunciation, targetPronunciation) {
-  // Helper function to generate a regular expression pattern for off-rhymes
-  function generateOffRhymePattern(pronunciation) {
-    let index = -1;
-    const stresses = ["1", "2", "0"];
-    for (const stress of stresses) {
-      index = pronunciation.lastIndexOf(stress);
-      if (index > -1) {
-        break;
-      }
-    }
-
-    let hyphenIndex = pronunciation.search("-");
-    if (hyphenIndex !== -1 && hyphenIndex < index) {
-      pronunciation = pronunciation.slice(hyphenIndex + 1);
-      pronunciation = pronunciation.trim();
-    }
-
-    let pronParts = pronunciation.split(/(..[012] R|ER[012])/);
-    pronParts = pronParts.map((part) =>
-      part.replace(/(..[012] R|ER[012])/g, "!")
-    );
-
-    pronParts = pronParts.map((part) => part.replace(/..[012]/g, ".[^R][012]"));
-    pronParts = pronParts.map((part) =>
-      part.replace("!", "(..[012] R|ER[012])")
-    );
-
-    let pronWild = pronParts.join("");
-    pronWild = pronWild + "$";
-
-    return pronWild;
-  }
-
-  const testPattern = generateOffRhymePattern(testPronunciation);
-  const targetPattern = generateOffRhymePattern(targetPronunciation);
-
-  // Compare the two patterns
-  return (
-    new RegExp(testPattern).test(targetPronunciation) ||
-    new RegExp(targetPattern).test(testPronunciation)
-  );
-}
-function isSlantRhyme(testPronunciation, targetPronunciation) {
-  // Helper function to generate a regular expression pattern for slant rhymes
-  function generateSlantRhymePattern(pronunciation) {
-    let index = pronunciation.search(/[012]/);
-
-    const pronParts = pronunciation.split("-");
-
-    let pronWild = pronParts
-      .map((part) => {
-        const vowelMatch = part.match(/..[012]/);
-        if (!vowelMatch) return "";
-        let vowel = vowelMatch[0];
-
-        return (
-          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*" +
-          vowel +
-          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*"
-        );
-      })
-      .join("-");
-
-    pronWild = pronWild + "$";
-
-    return pronWild;
-  }
-
-  const testPattern = generateSlantRhymePattern(testPronunciation);
-  const targetPattern = generateSlantRhymePattern(targetPronunciation);
-
-  // Compare the two patterns
-  return (
-    new RegExp(testPattern).test(targetPronunciation) ||
-    new RegExp(targetPattern).test(testPronunciation)
-  );
-}
-// helper to get the stressed part of a pronunciation
-function getStressedRhymePart(pronunciation) {
-  let targetIndex = pronunciation.length;
-  const stresses = ["1", "2", "0"];
-
-  for (const stress of stresses) {
-    const index = pronunciation.lastIndexOf(stress);
-    if (index !== -1 && index < targetIndex) {
-      targetIndex = index;
-      break;
-    }
-  }
-  return pronunciation.slice(targetIndex - 2);
-}
-
-// function to get the closest pronunciation to the target pronunciation from multiple dictionary options for one spelling of a word
-// return the closest pronunciation and the edit distance
-function getClosestPronunciation(userInput) {
-  // find the pronunciation that has the fewest edits from the user input
-  // there might be only one pronunciation for a word
-  let bestPronunciation = "";
-  let bestDistance = Infinity;
-  let testASCIIBET = "";
-  if (dictionary[userInput].length === 1) {
-    bestPronunciation = dictionary[userInput][0];
-    testASCIIBET = convertToASCIIBET(bestPronunciation);
-    bestDistance = editDistance(targetASCIIBET, testASCIIBET);
-    return [bestPronunciation, bestDistance];
-  }
-
-  for (const pronunciation of dictionary[userInput]) {
-    testASCIIBET = convertToASCIIBET(pronunciation);
-    const distance = editDistance(targetASCIIBET, testASCIIBET);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestPronunciation = pronunciation;
-    }
-  }
-  return [bestPronunciation, bestDistance];
-}
-
 /**
  * Reset all game state variables to their initial values.
  * If the game is in challenge mode, also reset the URL and challenge link.
@@ -680,15 +472,10 @@ function resetGameState() {
   // Reset visibility of game sections
   endState.classList.add("hidden");
   initialState.classList.remove("hidden");
-}
-
-function normalize(word) {
-  return word.trim().toUpperCase();
-}
-//check if pronunciation exists in dictionary
-function pronunciationExists(word) {
-  if (!dictionaryLoaded) return;
-  if (dictionary[word]) return true;
+  welcomeChallengeMessage.classList.remove("expanded");
+  welcomeChallengeMessage.classList.add("collapsed");
+  warningChallengeMessage.classList.remove("expanded");
+  warningChallengeMessage.classList.add("collapsed");
 }
 
 function updateStatusMessage(message) {
@@ -712,6 +499,151 @@ function updateStatusMessage(message) {
     statusDisplay.textContent = "";
     statusDisplay.classList.remove("fade-out");
   }, 3000);
+}
+
+// function to update the score and display it
+function updateScore(points) {
+  score += points;
+  scoreDisplay.textContent = score;
+}
+// function to update the previous guesses display
+
+function updatePreviousGuesses(guess) {
+  if (previousGuessesDisplay.childElementCount === 0) {
+    previousGuessesDisplay.classList.remove("transparent");
+  }
+
+  const guessElement = document.createElement("span");
+  guessElement.textContent = guess;
+  // insert at the beginning of the list
+  previousGuessesDisplay.insertBefore(
+    guessElement,
+    previousGuessesDisplay.firstChild
+  );
+}
+
+// EVENT LISTENERS
+
+// Listen for the start button to be clicked
+startButton.addEventListener("click", startCountdown);
+// Listen for the restart button to be clicked
+restartButton.addEventListener("click", resetGameState);
+
+howToButton.addEventListener("click", function () {
+  modal.style.display = "block";
+});
+modalCloseButton.addEventListener("click", function () {
+  modal.style.display = "none";
+});
+modalBottomDoneButton.addEventListener("click", function () {
+  modal.style.display = "none";
+});
+
+function closeModalIfClickedOutside(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+    return;
+  }
+  if (event.target == challengeModal) {
+    challengeModal.style.display = "none";
+    return;
+  }
+}
+// Open the Challenge link modal
+challengeFriendButton.addEventListener("click", () => {
+  challengeModal.style.display = "block";
+});
+
+// Close the Challenge link modal
+closeChallengeModalButton.addEventListener("click", () => {
+  challengeModal.style.display = "none";
+});
+
+// helper for copying the challenge message to the clipboard
+async function copyContent(element) {
+  try {
+    await navigator.clipboard.writeText(element.value);
+    return true;
+  } catch (err) {
+    console.error("Failed to copy: ", err);
+    return false;
+  }
+}
+// helper for changing the button text to "Copied!" for 3 seconds and then back to the original text
+function changeButtonText(button) {
+  const originalText = button.textContent;
+  button.textContent = "Copied!";
+  setTimeout(() => {
+    button.textContent = originalText;
+  }, 3000);
+}
+
+// Copy the challenge link to the clipboard
+copyChallengeLinkButton.addEventListener("click", () => {
+  const copied = copyContent(challengeLinkInput);
+  if (copied) {
+    changeButtonText(copyChallengeLinkButton);
+  }
+});
+
+// Copy the challenge message to the clipboard
+copyChallengeMessageButton.addEventListener("click", () => {
+  const copied = copyContent(challengeMessage);
+  if (copied) {
+    changeButtonText(copyChallengeMessageButton);
+  }
+});
+
+// Listen for clicks (desktop) and for taps (mobile) outside modals
+window.addEventListener("click", closeModalIfClickedOutside);
+window.addEventListener("touchstart", closeModalIfClickedOutside);
+
+// Listen for form submit
+wordForm.addEventListener("submit", function (event) {
+  event.preventDefault();
+  // Get the user input and normalize it
+  const userInput = normalize(textInput.value);
+  // prevent them from submitting an empty string
+  if (userInput === "") return;
+  // prevent submitting the same word as the target word
+  if (userInput === targetWord) {
+    updateStatusMessage("You can't rhyme with the target word!");
+    textInput.value = "";
+    return;
+  }
+
+  if (pronunciationExists(userInput)) {
+    // see if the user has already guessed this word
+    if (strongGuesses.has(userInput)) {
+      updateStatusMessage(`Already found "${userInput}"`);
+    } else if (weakGuesses.has(userInput)) {
+      updateStatusMessage(`"${userInput}" already guessed`);
+    } else {
+      handleKnownPronunciation(userInput);
+    }
+  } else {
+    // see if the user has already guessed this word
+    if (badGuesses.has(userInput)) {
+      updateStatusMessage(`Already tried unknown word "${userInput}"`);
+    } else {
+      // update status to show that the word is not in the dictionary
+      updateStatusMessage(`"${userInput}" not found in dictionary`);
+      // add the word to the bad guesses set
+      badGuesses.add(userInput);
+    }
+  }
+  textInput.value = "";
+});
+
+// RHYME SCORING UTILITY FUNCTIONS
+
+function normalize(word) {
+  return word.trim().toUpperCase();
+}
+//check if pronunciation exists in dictionary
+function pronunciationExists(word) {
+  if (!dictionaryLoaded) return;
+  if (dictionary[word]) return true;
 }
 
 function convertToASCIIBET(pronunciation) {
@@ -832,25 +764,127 @@ function editDistance(str1, str2) {
 
   return matrix[len1][len2];
 }
-
-// function to update the score and display it
-function updateScore(points) {
-  score += points;
-  scoreDisplay.textContent = score;
-}
-
-// function to update the previous guesses display
-
-function updatePreviousGuesses(guess) {
-  if (previousGuessesDisplay.childElementCount === 0) {
-    previousGuessesDisplay.classList.remove("transparent");
+// function to get the closest pronunciation to the target pronunciation from multiple dictionary options for one spelling of a word
+// return the closest pronunciation and the edit distance
+function getClosestPronunciation(userInput) {
+  // find the pronunciation that has the fewest edits from the user input
+  // there might be only one pronunciation for a word
+  let bestPronunciation = "";
+  let bestDistance = Infinity;
+  let testASCIIBET = "";
+  if (dictionary[userInput].length === 1) {
+    bestPronunciation = dictionary[userInput][0];
+    testASCIIBET = convertToASCIIBET(bestPronunciation);
+    bestDistance = editDistance(targetASCIIBET, testASCIIBET);
+    return [bestPronunciation, bestDistance];
   }
 
-  const guessElement = document.createElement("span");
-  guessElement.textContent = guess;
-  // insert at the beginning of the list
-  previousGuessesDisplay.insertBefore(
-    guessElement,
-    previousGuessesDisplay.firstChild
+  for (const pronunciation of dictionary[userInput]) {
+    testASCIIBET = convertToASCIIBET(pronunciation);
+    const distance = editDistance(targetASCIIBET, testASCIIBET);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestPronunciation = pronunciation;
+    }
+  }
+  return [bestPronunciation, bestDistance];
+}
+// RHYME CHECKING FUNCTIONS
+function isPerfectRhyme(testPronunciation, targetPronunciation) {
+  // get the stressed part of the pronunciation
+  const testStressed = getStressedRhymePart(testPronunciation);
+  const targetStressed = getStressedRhymePart(targetPronunciation);
+  return testStressed === targetStressed;
+}
+function isOffRhyme(testPronunciation, targetPronunciation) {
+  // Helper function to generate a regular expression pattern for off-rhymes
+  function generateOffRhymePattern(pronunciation) {
+    let index = -1;
+    const stresses = ["1", "2", "0"];
+    for (const stress of stresses) {
+      index = pronunciation.lastIndexOf(stress);
+      if (index > -1) {
+        break;
+      }
+    }
+
+    let hyphenIndex = pronunciation.search("-");
+    if (hyphenIndex !== -1 && hyphenIndex < index) {
+      pronunciation = pronunciation.slice(hyphenIndex + 1);
+      pronunciation = pronunciation.trim();
+    }
+
+    let pronParts = pronunciation.split(/(..[012] R|ER[012])/);
+    pronParts = pronParts.map((part) =>
+      part.replace(/(..[012] R|ER[012])/g, "!")
+    );
+
+    pronParts = pronParts.map((part) => part.replace(/..[012]/g, ".[^R][012]"));
+    pronParts = pronParts.map((part) =>
+      part.replace("!", "(..[012] R|ER[012])")
+    );
+
+    let pronWild = pronParts.join("");
+    pronWild = pronWild + "$";
+
+    return pronWild;
+  }
+
+  const testPattern = generateOffRhymePattern(testPronunciation);
+  const targetPattern = generateOffRhymePattern(targetPronunciation);
+
+  // Compare the two patterns
+  return (
+    new RegExp(testPattern).test(targetPronunciation) ||
+    new RegExp(targetPattern).test(testPronunciation)
   );
+}
+function isSlantRhyme(testPronunciation, targetPronunciation) {
+  // Helper function to generate a regular expression pattern for slant rhymes
+  function generateSlantRhymePattern(pronunciation) {
+    let index = pronunciation.search(/[012]/);
+
+    const pronParts = pronunciation.split("-");
+
+    let pronWild = pronParts
+      .map((part) => {
+        const vowelMatch = part.match(/..[012]/);
+        if (!vowelMatch) return "";
+        let vowel = vowelMatch[0];
+
+        return (
+          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*" +
+          vowel +
+          "(B|CH|D|DH|F|G|HH|JH|K|L|M|N|NG|P|R|S|SH|T|TH|V|W|Y|Z|ZH| )*"
+        );
+      })
+      .join("-");
+
+    pronWild = pronWild + "$";
+
+    return pronWild;
+  }
+
+  const testPattern = generateSlantRhymePattern(testPronunciation);
+  const targetPattern = generateSlantRhymePattern(targetPronunciation);
+
+  // Compare the two patterns
+  return (
+    new RegExp(testPattern).test(targetPronunciation) ||
+    new RegExp(targetPattern).test(testPronunciation)
+  );
+}
+// helper to get the stressed part of a pronunciation
+function getStressedRhymePart(pronunciation) {
+  let targetIndex = pronunciation.length;
+  const stresses = ["1", "2", "0"];
+
+  for (const stress of stresses) {
+    const index = pronunciation.lastIndexOf(stress);
+    if (index !== -1 && index < targetIndex) {
+      targetIndex = index;
+      break;
+    }
+  }
+  return pronunciation.slice(targetIndex - 2);
 }

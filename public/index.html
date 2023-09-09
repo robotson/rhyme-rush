@@ -32,9 +32,20 @@
     </div>
     <div id="initial-state" class="screen-spanning">
       <h1>Welcome to Rhyme Rush!</h1>
+      <p id="welcome-challenge-message" class="collapsed">
+        You've been challenged!
+      </p>
       <p>Guess as many rhymes as you can before the timer runs out!</p>
-      <div><button id="start-button">Start Game</button></div>
+
+      <div>
+        <button id="start-button">Start Game</button>
+      </div>
       <div><button id="how-to-play">How To Play</button></div>
+
+      <p id="warning-challenge-message" class="collapsed">
+        Oops! The challenge link you've used seems to be invalid. Please check
+        the link or try starting a regular game.
+      </p>
     </div>
 
     <div id="countdown" class="hidden">
@@ -160,8 +171,10 @@
 
         <!-- Challenge Message Section -->
         <div class="modal-section">
-          <p>Feeling competitive? Challenge your friends to beat your score!</p>
-          <p id="challenge-paragraph"></p>
+          <p>Feeling competitive? Share this message with friends!</p>
+          <p id="challenge-paragraph">
+            This link lets them play the same word you just finished.
+          </p>
           <textarea
             id="challenge-message"
             rows="3"
