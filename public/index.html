@@ -56,6 +56,7 @@
       <h1 id="countdown-number"></h1>
       <div id="playing-state"></div>
       <form id="user-input-form"></form>
+      <div id="start-button"></div>
     </div>
     <div class="nav hidden">RHYME RUSH</div>
     <!-- initial screen -->
@@ -66,7 +67,10 @@
         <div class="line-2 hero-text">RHYME RUSH</div>
 
         <div class="start-button-container">
-          <button id="start-button" class="reset red-outline-button">
+          <button
+            id="get-this-party-started-button"
+            class="reset start-button red"
+          >
             START GAME
           </button>
         </div>
@@ -117,10 +121,10 @@
         <!-- target word display -->
         <div class="target-word-container">
           <div class="target-word-label">TARGET WORD</div>
-          <div class="target-word">SUPERCALIFRAGLISTIC</div>
+          <div class="target-word"></div>
         </div>
         <!-- user input form -->
-        <form class="user-input-form">
+        <form id="so-you-think-you-can-rhyme-form" class="user-input-form">
           <input
             id="user-input"
             type="text"

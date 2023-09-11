@@ -15,6 +15,7 @@
   --doc-height: 100%;
   --checker-board-size: 20px;
   --circle-wipe-duration: 0.4s;
+  --label-text-size: 16px;
 }
 body {
   margin: 0;
@@ -133,13 +134,12 @@ body {
   height: calc(100% - 190px);
 }
 
-#start-button.red-outline-button {
+.start-button {
   width: 214px;
   height: 48px;
   border-radius: 30px;
   border: 3px solid var(--rhyme-rush-red);
   background: #fff;
-  color: var(--rhyme-rush-red);
   font-weight: 600;
   font-size: 16px;
   line-height: 122.9%; /* 19.664px */
@@ -217,7 +217,7 @@ body {
 }
 .game .boards {
   font-family: var(--courier-stack);
-  font-size: 12px;
+  font-size: var(--label-text-size);
   display: flex;
   width: 100%;
   flex-direction: row;
@@ -242,9 +242,9 @@ body {
 .game .panel {
   background-color: var(--panel-grey);
   text-align: center;
-  width: 16px;
-  height: 17.5px;
-  font-size: 16px;
+  width: calc(var(--label-text-size) * 1.33);
+  height: calc(var(--label-text-size) * 1.33);
+  font-size: calc(var(--label-text-size) * 1.33);
 }
 .game .target-word-container {
   margin-top: 24px;
@@ -252,17 +252,17 @@ body {
 .game .target-word-label {
   text-align: left;
   font-family: var(--courier-stack);
-  font-size: 12px;
+  font-size: var(--label-text-size);
 }
 .game .target-word {
   margin-top: 6px;
   height: 48px;
   background-color: var(--off-black);
-  color: var(--off-white);
+  color: var(--panel-grey);
   text-align: center;
   font-size: 21px;
   font-style: italic;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 48px;
 }
 .game .user-input-form #user-input {

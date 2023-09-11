@@ -11,7 +11,6 @@ const howToButton = document.getElementById("how-to-play");
 const modalCloseButton = document.getElementsByClassName("close-button")[0];
 const modalBottomDoneButton = document.getElementById("modal-bottom-done");
 const playingState = document.getElementById("playing-state");
-const startButton = document.getElementById("start-button");
 const restartButton = document.getElementById("restart-button");
 const finalScore = document.getElementById("final-score");
 const textInput = document.getElementById("user-input");
@@ -41,13 +40,7 @@ const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
 ``;
 const baseURL = window.location.origin;
 // array of starter words
-let starterWords = ["RHYME", "TIME", "RUSH", "CRUSH"];
-let isChallengeMode = false;
-let dictionary = {};
-let dictionaryLoaded = false;
-let targetWord = "";
-let targetPronunciation = "";
-let targetASCIIBET = "";
+
 let challengeLink = `${baseURL}/challenge/`;
 let maxEditDistance = 0;
 let statusTimeoutID;
@@ -59,30 +52,7 @@ const badGuesses = new Set();
 const strongGuesses = new Set();
 const weakGuesses = new Set();
 const finalGuesses = [];
-loadDictionary();
-loadStarterWords();
 
-async function loadDictionary() {
-  try {
-    const response = await fetch("./dictionary.json");
-    dictionary = await response.json();
-    dictionaryLoaded = true;
-    handleChallengeWord();
-  } catch (error) {
-    console.error("Error loading dictionaries:", error);
-    alert("Error loading dictionaries. Please try refreshing the page.");
-  }
-}
-
-async function loadStarterWords() {
-  try {
-    const response = await fetch("./level_1_words.json");
-    starterWords = await response.json();
-  } catch (error) {
-    console.error("Error loading starter words:", error);
-    alert("Error loading starter words. Please try refreshing the page.");
-  }
-}
 function handleChallengeWord() {
   const pathArray = window.location.pathname.split("/");
   if (pathArray.length > 2 && pathArray[1] === "challenge") {
@@ -433,8 +403,6 @@ function updatePreviousGuesses(guess) {
 
 // EVENT LISTENERS
 
-// Listen for the start button to be clicked
-startButton.addEventListener("click", startCountdown);
 // Listen for the restart button to be clicked
 restartButton.addEventListener("click", resetGameState);
 
@@ -543,103 +511,6 @@ wordForm.addEventListener("submit", function (event) {
   }
   textInput.value = "";
 });
-
-// RHYME SCORING UTILITY FUNCTIONS
-
-function normalize(word) {
-  return word.trim().toUpperCase();
-}
-//check if pronunciation exists in dictionary
-function pronunciationExists(word) {
-  if (!dictionaryLoaded) return;
-  if (dictionary[word]) return true;
-}
-
-function convertToASCIIBET(pronunciation) {
-  const phones = {
-    AH0: "!",
-    N: "N",
-    T: "T",
-    S: "S",
-    L: "L",
-    R: "R",
-    K: "K",
-    IH0: "#",
-    D: "D",
-    M: "M",
-    Z: "Z",
-    P: "P",
-    ER0: "$",
-    IY0: "&",
-    EH1: "<",
-    B: "B",
-    AE1: ">",
-    IH1: "@",
-    AA1: "0",
-    F: "F",
-    NG: "n",
-    V: "V",
-    EY1: "1",
-    G: "G",
-    SH: "s",
-    IY1: "2",
-    W: "W",
-    AO1: "3",
-    AH1: "4",
-    OW1: "5",
-    AY1: "6",
-    JH: "J",
-    HH: "H",
-    UW1: "7",
-    Y: "Y",
-    CH: "C",
-    ER1: "8",
-    EY2: "9",
-    OW0: "A",
-    AY2: "E",
-    EH2: "I",
-    IH2: "O",
-    AE2: "Q",
-    TH: "t",
-    AA2: "U",
-    AW1: "X",
-    OW2: "a",
-    EH0: "b",
-    AA0: "c",
-    IY2: "e",
-    UW0: "f",
-    AO2: "g",
-    AE0: "h",
-    UH1: "i",
-    AH2: "j",
-    UW2: "k",
-    AY0: "l",
-    OY1: "m",
-    AO0: "o",
-    ZH: "z",
-    AW2: "p",
-    DH: "d",
-    EY0: "q",
-    ER2: "r",
-    UH2: "u",
-    OY2: "v",
-    UH0: "w",
-    AW0: "x",
-    OY0: "y",
-  };
-  let asciibet = "";
-  // Split the pronunciation string into individual phonemes
-  let phonemes = pronunciation.split(" ");
-  // Convert each phoneme to its ASCIIBET equivalent
-  for (let phoneme of phonemes) {
-    if (phones[phoneme]) {
-      asciibet += phones[phoneme];
-    } else {
-      asciibet += phoneme;
-    }
-  }
-  return asciibet;
-}
 
 function editDistance(str1, str2) {
   const len1 = str1.length;
