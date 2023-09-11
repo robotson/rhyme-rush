@@ -8,8 +8,10 @@
   --courier-stack: "Courier Prime", Courier, Menlo, Consolas, Monaco,
     "Liberation Mono", "Lucida Console", monospace;
   --rhyme-rush-red: #ff2e47;
-  --background-off-white: #f9f9fb;
+  --off-white: #f9f9fb;
   --off-black: #1d1b1b;
+  --panel-grey: #d9d9d9;
+  --found-rhymes-grey: #f2f2f2;
   --doc-height: 100%;
   --checker-board-size: 20px;
   --circle-wipe-duration: 0.4s;
@@ -18,9 +20,10 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--mont-stack);
-  background-color: var(--background-off-white);
+  background-color: var(--off-white);
 }
 .nav {
+  z-index: 10;
   height: 48px;
   opacity: 0;
   background-color: var(--off-black);
@@ -30,8 +33,7 @@ body {
   font-weight: 900;
   line-height: 52px;
   letter-spacing: 0.24px;
-  /* animate transition to height sliding down and opacity coming into view */
-  transition: all var(--circle-wipe-duration) ease-in-out;
+  transition: opacity var(--circle-wipe-duration) ease-in-out, color 0.5s ease;
 }
 
 /* util classes */
@@ -57,7 +59,28 @@ body {
 .transparent {
   opacity: 0;
 }
-
+.checker-stripe {
+  height: var(--checker-board-size);
+  background-image: linear-gradient(
+      45deg,
+      #000 25%,
+      transparent 25%,
+      transparent 75%,
+      #000 75%,
+      #000
+    ),
+    linear-gradient(
+      45deg,
+      #000 25%,
+      transparent 25%,
+      transparent 75%,
+      #000 75%,
+      #000
+    );
+  background-size: var(--checker-board-size) var(--checker-board-size);
+  background-position: 0 0,
+    calc(var(--checker-board-size) / 2) calc(var(--checker-board-size) / 2);
+}
 /* init screen mobile styles */
 .init {
   margin: auto;
@@ -78,27 +101,6 @@ body {
   margin-left: 40px;
   margin-right: 40px;
   width: calc(100% - 80px);
-  height: var(--checker-board-size);
-  /* gradient checkerboard */
-  background-image: linear-gradient(
-      45deg,
-      #000 25%,
-      transparent 25%,
-      transparent 75%,
-      #000 75%,
-      #000
-    ),
-    linear-gradient(
-      45deg,
-      #000 25%,
-      transparent 25%,
-      transparent 75%,
-      #000 75%,
-      #000
-    );
-  background-size: var(--checker-board-size) var(--checker-board-size);
-  background-position: 0 0,
-    calc(var(--checker-board-size) / 2) calc(var(--checker-board-size) / 2);
 }
 .line-1 {
   margin-top: 50px;
@@ -198,14 +200,100 @@ body {
   font-size: 200px;
 }
 
+/* mobile styles for Game screen */
+
+.game {
+  background-color: var(--off-white);
+  min-height: 80vh;
+  color: var(--off-black);
+}
+.game .checker-stripe {
+  height: 36px;
+  background-size: 36px 36px;
+  background-position: 0 0, 18px 18px;
+}
+.game .inner-wrapper {
+  padding: 0 20px;
+}
+.game .boards {
+  font-family: var(--courier-stack);
+  font-size: 12px;
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+.game .board {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: end;
+  gap: 8px;
+}
+.game .panels {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2px;
+}
+.game .panel {
+  background-color: var(--panel-grey);
+  text-align: center;
+  width: 16px;
+  height: 17.5px;
+  font-size: 16px;
+}
+.game .target-word-container {
+  margin-top: 24px;
+}
+.game .target-word-label {
+  text-align: left;
+  font-family: var(--courier-stack);
+  font-size: 12px;
+}
+.game .target-word {
+  margin-top: 6px;
+  height: 48px;
+  background-color: var(--off-black);
+  color: var(--off-white);
+  text-align: center;
+  font-size: 21px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 48px;
+}
+.game .user-input-form #user-input {
+  background-color: var(--off-white);
+  border-radius: 0;
+  border-width: 0 0 1px 0;
+  text-align: center;
+  font-size: 21px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 132%; /* 27.72px */
+  width: 100%;
+}
+
 /* styles for animations and transitions */
-#transition-circle {
+.transition-circle {
+  z-index: 1000;
   position: fixed;
   transition: all var(--circle-wipe-duration) ease-in-out;
   border-radius: 50%;
-  background-color: var(--rhyme-rush-red);
   opacity: 0;
+}
+.init .transition-circle {
+  background-color: var(--rhyme-rush-red);
   box-shadow: 0 0 25px 25px var(--rhyme-rush-red);
+}
+.get-ready .transition-circle {
+  background-color: var(--off-white);
+  box-shadow: 0 0 25px 25px var(--off-white);
+  transition: all var(--circle-wipe-duration) ease-in-out;
+  z-index: 2;
 }
 .fade-in-scale {
   animation: fadeInScale 0.2s ease-in-out forwards;

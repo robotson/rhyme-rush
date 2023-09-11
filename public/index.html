@@ -54,7 +54,10 @@
       <div id="nav" class="hidden"></div>
       <div id="initial-state" class="hidden"></div>
       <h1 id="countdown-number"></h1>
+      <div id="playing-state"></div>
+      <form id="user-input-form"></form>
     </div>
+    <div class="nav hidden">RHYME RUSH</div>
     <!-- initial screen -->
     <div class="init relative">
       <div class="title-card relative">
@@ -75,28 +78,62 @@
         </div>
         <div class="how-to"><span id="how-to-play">ⓘ HOW TO PLAY</span></div>
       </div>
-      <div id="transition-circle"></div>
+      <div class="transition-circle"></div>
     </div>
     <!-- countdown screen -->
-    <div class="get-ready hidden" id="countdown">
-      <div class="nav">RHYME RUSH</div>
+    <div class="get-ready relative hidden" id="countdown">
+      <div class="transition-circle"></div>
       <div class="counter step-0 transparent">GET READY!</div>
       <div class="counter counter-number step-1 transparent hidden">3</div>
       <div class="counter counter-number step-2 transparent hidden">2</div>
       <div class="counter counter-number step-3 transparent hidden">1</div>
     </div>
 
-    <div id="end-state" class="hidden">
-      <h1>Your Score: <span id="final-score"></span></h1>
-      <button id="restart-button">New Game</button>
-      <button id="challenge-button">Challenge a Friend</button>
-      <h2 id="final-target"></h2>
-      <div id="final-words" class="screen-spanning">
-        <!-- Filled by JavaScript -->
+    <!-- game screen -->
+    <div class="game hidden">
+      <div class="status checker-stripe"></div>
+      <div class="inner-wrapper">
+        <!-- score and time displays -->
+        <div class="boards">
+          <!-- score side-->
+          <div class="scordboard board">
+            <div class="scoreboard-text">SCORE</div>
+            <div class="scoreboard-number-container panels">
+              <div class="scoreboard-number panel">0</div>
+              <div class="scoreboard-number panel">0</div>
+              <div class="scoreboard-number panel">0</div>
+            </div>
+          </div>
+          <!-- time side-->
+          <div class="timer board">
+            <div>TIME</div>
+            <div class="timer-number-container panels">
+              <div class="timer-number panel">0</div>
+              <div class="timer-number panel">9</div>
+              <div class="timer-number panel">0</div>
+            </div>
+          </div>
+        </div>
+        <!-- target word display -->
+        <div class="target-word-container">
+          <div class="target-word-label">TARGET WORD</div>
+          <div class="target-word">SUPERCALIFRAGLISTIC</div>
+        </div>
+        <!-- user input form -->
+        <form class="user-input-form">
+          <input
+            id="user-input"
+            type="text"
+            placeholder="TYPE YOUR RHYME HERE"
+            enterkeyhint="go"
+          />
+        </form>
       </div>
+      <!-- found rhymes display -->
+      <div class="found-rhymes-wrapper"></div>
     </div>
 
-    <div id="playing-state" class="hidden">
+    <!-- <div id="playing-state" class="hidden">
       <div id="wrapper">
         <div id="first-row" class="screen-spanning">
           <div id="score-box">
@@ -130,7 +167,53 @@
       </form>
 
       <div id="guesses-row" class="screen-spanning transparent"></div>
+    </div> -->
+
+    <div id="end-state" class="hidden">
+      <h1>Your Score: <span id="final-score"></span></h1>
+      <button id="restart-button">New Game</button>
+      <button id="challenge-button">Challenge a Friend</button>
+      <h2 id="final-target"></h2>
+      <div id="final-words" class="screen-spanning">
+        <!-- Filled by JavaScript -->
+      </div>
     </div>
+
+    <!-- <div id="playing-state" class="hidden">
+      <div id="wrapper">
+        <div id="first-row" class="screen-spanning">
+          <div id="score-box">
+            <p>Score:</p>
+            <p id="score">0</p>
+          </div>
+          <div id="status-box">
+            <p id="status-message"></p>
+          </div>
+          <div id="timer-box">
+            <p>Time:</p>
+            <p id="timer">2:00</p>
+          </div>
+        </div>
+
+        <div id="second-row">
+          <p>Target word:</p>
+          <div id="target-box" class="screen-spanning">
+            <p id="target-word"></p>
+          </div>
+        </div>
+      </div>
+
+      <form id="user-input-form">
+        <input
+          id="user-input"
+          type="text"
+          enterkeyhint="go"
+          class="screen-spanning"
+        />
+      </form>
+
+      <div id="guesses-row" class="screen-spanning transparent"></div>
+    </div> -->
 
     <!-- Modals -->
     <div id="instruction-modal" class="modal">

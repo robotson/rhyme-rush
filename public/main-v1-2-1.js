@@ -123,60 +123,6 @@ function handleBadChallengeLink() {
   window.history.pushState({}, "", "/");
 }
 
-function startTimer() {
-  timer = setInterval(function () {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    document.getElementById("timer").textContent = `${minutes}:${
-      seconds < 10 ? "0" : ""
-    }${seconds}`;
-
-    if (timeLeft <= 0) {
-      clearInterval(timer);
-      textInput.blur();
-      endGame();
-    }
-
-    timeLeft--;
-  }, 1000);
-}
-function startGame() {
-  // When game starts
-  gtag("event", "game_start", {
-    event_category: "game",
-    event_label: "Game Started",
-    value: isChallengeMode ? "challenge" : "normal", // Assuming you have a boolean flag for challenge mode
-  });
-
-  // hide the countdown and show the playing state
-  initialState.classList.add("hidden");
-  playingState.classList.remove("hidden");
-  // start the timer
-  document.getElementById("timer").textContent = INITIAL_TIME_DISPLAY;
-  startTimer();
-
-  // we have a routine for setting the target word
-  // either we're in challenge mode and the target word is set
-  // or we're in normal mode and we need to set the target word
-  if (!isChallengeMode) {
-    // get a random word from the starter words array
-    targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
-    // normalize the word
-    // targetWord = "rhyme";
-    targetWord = normalize(targetWord);
-    // make sure it's in the dictionary
-    while (!pronunciationExists(targetWord)) {
-      targetWord =
-        starterWords[Math.floor(Math.random() * starterWords.length)];
-      targetWord = normalize(targetWord);
-    }
-  }
-  wordDisplay.textContent = targetWord;
-  // most common pronunciation is the first one
-  targetPronunciation = dictionary[targetWord][0];
-  targetASCIIBET = convertToASCIIBET(targetPronunciation);
-  maxEditDistance = targetASCIIBET.length;
-}
 // called when the timer runs out
 function endGame() {
   // When game ends

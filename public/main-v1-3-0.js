@@ -6,7 +6,6 @@ let lastScrollY = window.scrollY;
 let isMobile = window.innerWidth <= MOBILE_BREAKPOINT; // Adjust 768 to your mobile breakpoint
 // Function to set the height
 const setViewportHeight = () => {
-  console.log("setViewportHeight called");
   document.documentElement.style.setProperty(
     "--doc-height",
     `${viewportHeight}px`
@@ -53,8 +52,6 @@ function setThemeColor(color) {
   themeColorTag.setAttribute("content", color);
 }
 
-// Usage
-
 // Utility function to calculate maximum distance from click point to any corner of the viewport
 function getMaxDistance(x, y) {
   const maxX = Math.max(x, window.innerWidth - x);
@@ -66,7 +63,7 @@ function startCountdown(event) {
   const countdownScreen = document.getElementsByClassName("get-ready")[0];
   const initScreen = document.getElementsByClassName("init")[0];
   const nav = document.getElementsByClassName("nav")[0];
-  let countdownNumber = 3;
+  let countdownNumber = 0;
 
   // set duration of transiton on css variable
   document.documentElement.style.setProperty(
@@ -75,7 +72,7 @@ function startCountdown(event) {
   );
 
   // routine to animate a transition from the start screen to the countdown screen
-  const circle = document.getElementById("transition-circle");
+  const circle = document.getElementsByClassName("transition-circle")[0];
   // Retrieve coordinates where the click event occurred
   const x = event.clientX;
   const y = event.clientY;
@@ -107,18 +104,17 @@ function startCountdown(event) {
     setThemeColor(OFF_BLACK);
     initScreen.classList.add("hidden");
     countdownScreen.classList.remove("hidden");
-
+    nav.classList.remove("hidden");
     nav.style.opacity = 1;
-    // requestAnimationFrame(() => {
     countdownElement.classList.remove("transparent");
     countdownElement.classList.add("fade-in-scale");
-    // });
+
     let index = 0;
     countdownInterval = setInterval(function () {
       if (countdownNumber <= 0) {
         // this is when the game starts
         clearInterval(countdownInterval);
-        document.getElementById("countdown").classList.add("hidden");
+        // document.getElementById("countdown").classList.add("hidden");
         startGame();
       } else {
         // get zeoth element and hide it
@@ -136,8 +132,6 @@ function startCountdown(event) {
         countdownNumber--;
       }
     }, 800);
-
-    // nav.height = 48;
   }, CIRCLE_TRANSITION_DURATION); // same duration as the CSS transition
 
   // HACK TO GET AROUND MOBILE KEYBOARD ISSUE on IOS
@@ -158,3 +152,122 @@ function startCountdown(event) {
   // END HACK
 }
 // -- End Countdown block -----------------------------------------------------
+
+// Start Game block -----------------------------------------------------------
+const INITIAL_TIMER_VALUE = 89;
+let clock_seconds = INITIAL_TIMER_VALUE;
+function startGame() {
+  // analytics event
+  gtag("event", "game_start", {
+    event_category: "game",
+    event_label: "Game Started",
+    value: isChallengeMode ? "challenge" : "normal", // Assuming you have a boolean flag for challenge mode
+  });
+
+  // similar to the countdown, we do another cirlce transition
+  const gameScreen = document.getElementsByClassName("game")[0];
+  const countdownScreen = document.getElementsByClassName("get-ready")[0];
+  const nav = document.getElementsByClassName("nav")[0];
+  nav.classList.remove("hidden");
+
+  const circle = document.getElementsByClassName("transition-circle")[1];
+  // this time we want to start the circle from the center of the screen
+  const x = window.innerWidth / 2;
+  const y = window.innerHeight / 2;
+  const maxDistance = getMaxDistance(x, y);
+
+  // Initially set the circle to emanate from the click point
+  circle.style.left = `${x}px`;
+  circle.style.top = `${y}px`;
+  circle.style.width = "0px";
+  circle.style.height = "0px";
+  circle.style.opacity = "1";
+
+  // force animation elements to happen in the right order
+  requestAnimationFrame(() => {
+    const circleDiameter = maxDistance * 2 - 25; // 25 is the box shadow
+    circle.style.width = `${circleDiameter}px`;
+    circle.style.height = `${circleDiameter}px`;
+    circle.style.left = `${x - maxDistance}px`;
+    circle.style.top = `${y - maxDistance}px`;
+  });
+  nav.style.color = "var(--off-white)";
+  // Hide the count screen and show the game screen after the animation
+  setTimeout(() => {
+    document.body.style.backgroundColor = "var(--off-white)";
+    countdownScreen.classList.add("hidden");
+    gameScreen.classList.remove("hidden");
+  }, CIRCLE_TRANSITION_DURATION);
+
+  // lets get the counter started
+  startTimer();
+}
+// helper for updating the timer
+function updateTimer(seconds) {
+  // split timer into hundreds, tens, and ones
+  const hundreds = Math.floor(seconds / 100);
+  const tens = Math.floor((seconds - hundreds * 100) / 10);
+  const ones = seconds - hundreds * 100 - tens * 10;
+  // update the timer
+  const timerNumberContainer = document.getElementsByClassName(
+    "timer-number-container"
+  )[0];
+  // each child of the timer number container represents a digit
+  const hundredsDigit = timerNumberContainer.children[0];
+  const tensDigit = timerNumberContainer.children[1];
+  const onesDigit = timerNumberContainer.children[2];
+  hundredsDigit.textContent = hundreds;
+  tensDigit.textContent = tens;
+  onesDigit.textContent = ones;
+}
+// helper for keeping track of the timer
+function startTimer() {
+  timer = setInterval(function () {
+    updateTimer(clock_seconds);
+    if (clock_seconds <= 0) {
+      clearInterval(timer);
+      textInput.blur();
+      endGame();
+    }
+
+    clock_seconds--;
+  }, 1000);
+}
+
+// function startGame() {
+//   // When game starts
+//   gtag("event", "game_start", {
+//     event_category: "game",
+//     event_label: "Game Started",
+//     value: isChallengeMode ? "challenge" : "normal", // Assuming you have a boolean flag for challenge mode
+//   });
+
+//   // hide the countdown and show the playing state
+//   initialState.classList.add("hidden");
+//   playingState.classList.remove("hidden");
+//   // start the timer
+//   document.getElementById("timer").textContent = INITIAL_TIME_DISPLAY;
+//   startTimer();
+
+//   // we have a routine for setting the target word
+//   // either we're in challenge mode and the target word is set
+//   // or we're in normal mode and we need to set the target word
+//   if (!isChallengeMode) {
+//     // get a random word from the starter words array
+//     targetWord = starterWords[Math.floor(Math.random() * starterWords.length)];
+//     // normalize the word
+//     // targetWord = "rhyme";
+//     targetWord = normalize(targetWord);
+//     // make sure it's in the dictionary
+//     while (!pronunciationExists(targetWord)) {
+//       targetWord =
+//         starterWords[Math.floor(Math.random() * starterWords.length)];
+//       targetWord = normalize(targetWord);
+//     }
+//   }
+//   wordDisplay.textContent = targetWord;
+//   // most common pronunciation is the first one
+//   targetPronunciation = dictionary[targetWord][0];
+//   targetASCIIBET = convertToASCIIBET(targetPronunciation);
+//   maxEditDistance = targetASCIIBET.length;
+// }
