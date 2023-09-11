@@ -17,40 +17,73 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- <meta name="viewport" content="viewport-fit=cover" /> -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;1,600;1,900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Courier+Prime&family=Montserrat:ital,wght@0,400;0,600;1,600;1,900&display=swap"
       rel="stylesheet"
     />
     <base href="/" />
     <link rel="stylesheet" href="/styles-v1-2-1.css" />
+    <link rel="stylesheet" href="/styles-v1-3-0.css" />
     <title>Rhyme Rush</title>
+
+    <script src="/main-v1-3-0.js" defer></script>
     <script src="/main-v1-2-1.js" defer></script>
   </head>
   <body>
-    <div id="nav">
-      <p>RHYME RUSH</p>
-    </div>
-    <div id="initial-state" class="screen-spanning">
-      <h1>Welcome to Rhyme Rush!</h1>
-      <p id="welcome-challenge-message" class="collapsed">
-        You've been challenged!
-      </p>
-      <p>Guess as many rhymes as you can before the timer runs out!</p>
-
-      <div>
-        <button id="start-button">Start Game</button>
+    <noscript>
+      <div
+        style="
+          font-size: 24px;
+          text-align: center;
+          background-color: red;
+          padding: 20px;
+        "
+      >
+        You need to enable JavaScript to use this application.
       </div>
-      <div><button id="how-to-play">How To Play</button></div>
-
-      <p id="warning-challenge-message" class="collapsed">
-        Oops! The challenge link you've used seems to be invalid. Please check
-        the link or try starting a regular game.
-      </p>
+    </noscript>
+    <!-- unused elements from old design-->
+    <div class="hidden unused">
+      <div id="nav" class="hidden"></div>
+      <div id="initial-state" class="hidden"></div>
+      <h1 id="countdown-number"></h1>
     </div>
+    <!-- initial screen -->
+    <div class="init relative">
+      <div class="title-card relative">
+        <div class="checker-stripe"></div>
+        <div class="line-1">WELCOME TO</div>
+        <div class="line-2 hero-text">RHYME RUSH</div>
 
-    <div id="countdown" class="hidden">
-      <h2>Get Ready!</h2>
-      <h1 id="countdown-number">3</h1>
+        <div class="start-button-container">
+          <button id="start-button" class="reset red-outline-button">
+            START GAME
+          </button>
+        </div>
+        <div class="checker-stripe bottom"></div>
+      </div>
+      <div class="info-container bottom">
+        <div class="courier">
+          Guess as many rhymes as you can before the timer runs out!
+        </div>
+        <div class="how-to"><span id="how-to-play">ⓘ HOW TO PLAY</span></div>
+      </div>
+      <div id="transition-circle"></div>
+    </div>
+    <!-- countdown screen -->
+    <div class="get-ready hidden" id="countdown">
+      <div class="nav">RHYME RUSH</div>
+      <div class="counter step-0 transparent">GET READY!</div>
+      <div class="counter counter-number step-1 transparent hidden">3</div>
+      <div class="counter counter-number step-2 transparent hidden">2</div>
+      <div class="counter counter-number step-3 transparent hidden">1</div>
     </div>
 
     <div id="end-state" class="hidden">

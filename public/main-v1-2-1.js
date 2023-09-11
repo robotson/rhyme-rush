@@ -123,43 +123,6 @@ function handleBadChallengeLink() {
   window.history.pushState({}, "", "/");
 }
 
-function startCountdown() {
-  // HACK TO GET AROUND MOBILE KEYBOARD ISSUE on IOS
-  const dumb = document.createElement("input");
-  dumb.setAttribute("type", "text");
-  dumb.setAttribute("enterkeyhint", "go");
-  dumb.style.position = "absolute";
-  dumb.style.opacity = 0;
-  dumb.style.height = 0;
-  dumb.style.width = 0;
-  dumb.style.fontSize = "16px";
-  document.body.prepend(dumb);
-  dumb.focus();
-  setTimeout(() => {
-    textInput.focus();
-    dumb.remove();
-  }, 3010);
-  // END HACK
-
-  let countdownNumber = 2;
-  const countdownElement = document.getElementById("countdown-number");
-
-  nav.style.color = "white";
-
-  initialState.classList.add("hidden");
-  document.getElementById("countdown").classList.remove("hidden");
-
-  countdownInterval = setInterval(function () {
-    if (countdownNumber <= 0) {
-      clearInterval(countdownInterval);
-      document.getElementById("countdown").classList.add("hidden");
-      startGame();
-    } else {
-      countdownElement.textContent = countdownNumber;
-      countdownNumber--;
-    }
-  }, 1000);
-}
 function startTimer() {
   timer = setInterval(function () {
     const minutes = Math.floor(timeLeft / 60);
