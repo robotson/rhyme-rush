@@ -1,5 +1,6 @@
 // GLOBALS
 // GLOBAL CONSTANTS
+const COUNTDOWN_DURATION = 0;
 const MOBILE_BREAKPOINT = 450;
 const CIRCLE_TRANSITION_DURATION = 400;
 const INITIAL_TIMER_VALUE = 89;
@@ -75,6 +76,8 @@ const ASCIIBET_PHONES = {
   AW0: "x",
   OY0: "y",
 };
+// GLOBAL ELEMENTS FOR DOM CONVENIENCE
+const RHYME_GOES_HERE_BOX = document.getElementById("rhyme-goes-here-box");
 
 // GLOBAL VARIABLES
 // variables for the game
@@ -91,6 +94,10 @@ const RHYME_RUSH_GLOBALS = {
   targetWord: "",
   targetPronunciation: "",
   targetASCIIBET: "",
+  badGuesses: new Set(),
+  strongGuesses: new Set(),
+  weakGuesses: new Set(),
+  finalGuesses: [],
 };
 
 // default game data --------------------------------------------------
@@ -196,7 +203,7 @@ function startCountdown(event) {
   const countdownScreen = document.getElementsByClassName("get-ready")[0];
   const initScreen = document.getElementsByClassName("init")[0];
   const nav = document.getElementsByClassName("nav")[0];
-  let countdownNumber = 3;
+  let countdownNumber = COUNTDOWN_DURATION;
 
   // set duration of transiton on css variable
   document.documentElement.style.setProperty(
@@ -277,7 +284,7 @@ function startCountdown(event) {
   document.body.prepend(dumb);
   dumb.focus();
   setTimeout(() => {
-    textInput.focus();
+    document.getElementById("rhyme-goes-here-box").focus();
     dumb.remove();
   }, 3010);
   // END HACK
@@ -383,6 +390,44 @@ function startTimer() {
 // Submit Word block ----------------------------------------------------------
 function submitWord(event) {
   event.preventDefault();
+  // Get the user input and normalize it
+  const userInput = normalize(RHYME_GOES_HERE_BOX.value);
+  // prevent them from submitting an empty string
+  if (userInput === "") return;
+  // prevent submitting the same word as the target word
+  if (userInput === RHYME_RUSH_GLOBALS.targetWord) {
+    //updateStatusMessage("You can't rhyme with the target word!");
+    console.log("You can't rhyme with the target word!");
+    RHYME_GOES_HERE_BOX.value = "";
+    return;
+  }
+
+  if (pronunciationExists(userInput)) {
+    // see if the user has already guessed this word
+    if (RHYME_RUSH_GLOBALS.strongGuesses.has(userInput)) {
+      //updateStatusMessage(`Already found "${userInput}"`);
+      console.log(`Already found "${userInput}"`);
+    } else if (RHYME_RUSH_GLOBALS.weakGuesses.has(userInput)) {
+      //updateStatusMessage(`"${userInput}" already guessed`);
+      console.log(`"${userInput}" already guessed`);
+    } else {
+      handleKnownPronunciation(userInput);
+      // console.log("handleKnownPronunciation");
+    }
+  } else {
+    // see if the user has already guessed this word
+    if (RHYME_RUSH_GLOBALS.badGuesses.has(userInput)) {
+      //updateStatusMessage(`Already tried unknown word "${userInput}"`);
+      console.log(`Already tried unknown word "${userInput}"`);
+    } else {
+      // update status to show that the word is not in the dictionary
+      //updateStatusMessage(`"${userInput}" not found in dictionary`);
+      console.log(`"${userInput}" not found in dictionary`);
+      // add the word to the bad guesses set
+      RHYME_RUSH_GLOBALS.badGuesses.add(userInput);
+    }
+  }
+  RHYME_GOES_HERE_BOX.value = "";
 }
 
 // RHYME SCORING UTILITY FUNCTIONS --------------------------------------------
@@ -407,6 +452,227 @@ function convertToASCIIBET(pronunciation, phones) {
     }
   }
   return asciibet;
+}
+
+// function to handle guesses with a known pronunciation
+function handleKnownPronunciation(userInput) {
+  // we assume that we haven't already guessed this word
+  // find the pronunciation that has the fewest edits from the user input
+  const [testPronunciation, testDistance] = getClosestPronunciation(userInput);
+
+  // first we check to see if the pronunciation is a perfect rhyme
+  if (
+    isPerfectRhyme(testPronunciation, RHYME_RUSH_GLOBALS.targetPronunciation)
+  ) {
+    // calculate the score, add it to the total, and update the score display
+    let points = 0;
+    if (testDistance === 0) {
+      // update status message because this is a "rich rhyme"
+      // updateStatusMessage(`"${userInput}" is a rich rhyme! +30 points`);
+      console.log(`"${userInput}" is a rich rhyme! +30 points`);
+      // updateScore(30);
+      points = 30;
+    } else {
+      // calculate bonus points for a perfect rhyme as the inverse of the edit distance
+      const bonusPoints = Math.ceil(10 / testDistance);
+
+      // update status message to show perfect rhyme, 10 points plus bonus points
+      // updateStatusMessage(
+      //   `Perfect rhyme! +10 points +${bonusPoints} phonetic bonus`
+      // );
+      console.log(`Perfect rhyme! +10 points +${bonusPoints} phonetic bonus`);
+      // update the score
+      // updateScore(10 + bonusPoints);
+      points = 10 + bonusPoints;
+    }
+    // add the word to our strong guesses set
+    RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
+    // update the display of guesses
+    // updatePreviousGuesses(userInput);
+    // add the word and associated info to the final guesses array
+    RHYME_RUSH_GLOBALS.finalGuesses.push({
+      word: userInput,
+      pronunciation: testPronunciation,
+      distance: testDistance,
+      points: points,
+      category: "perfect",
+    });
+    // } else if (
+    //   isOffRhyme(testPronunciation, RHYME_RUSH_GLOBALS.targetPronunciation)
+    // ) {
+    //   // points for an offrhyme will be almost as much as a perfect rhyme, lets say, base score of 7
+    //   // plus a bonus for the edit distance
+    //   // we should be garunteed to have edit distance of at least 1 because we've already checked for perfect rhymes
+    //   // so we'll add 1 to the edit distance to avoid dividing by 0
+    //   if (testDistance === 0) {
+    //     testDistance = 1;
+    //   }
+    //   let points = 7;
+    //   const bonusPoints = Math.ceil(7 / testDistance);
+
+    //   // update status message to show off rhyme, 7 points plus bonus points
+    //   //updateStatusMessage(`Off rhyme! +7 points +${bonusPoints} phonetic bonus`);
+    //   // update the score
+    //   //updateScore(7 + bonusPoints);
+    //   points += bonusPoints;
+    //   // add the word to our strong guesses set
+    //   RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
+    //   // update the display of guesses
+    //   //updatePreviousGuesses(userInput);
+    //   // add the word and associated info to the final guesses array
+    //   RHYME_RUSH_GLOBALS.finalGuesses.push({
+    //     word: userInput,
+    //     pronunciation: testPronunciation,
+    //     distance: testDistance,
+    //     points: points,
+    //     category: "off",
+    //   });
+    // } else if (
+    //   isSlantRhyme(testPronunciation, RHYME_RUSH_GLOBALS.targetPronunciation)
+    // ) {
+    //   // we'll score slant rhymes similarly, but give them a base score of 5 points. otherwise
+    //   // the process is the same as off rhymes
+    //   if (testDistance === 0) {
+    //     testDistance = 1;
+    //   }
+    //   let points = 5;
+    //   const bonusPoints = Math.ceil(5 / testDistance);
+
+    //   // update status message to show off rhyme, 5 points plus bonus points
+    //   // updateStatusMessage(
+    //   //   `Slant rhyme! +5 points +${bonusPoints} phonetic bonus`
+    //   // );
+    //   // update the score
+    //   // updateScore(5 + bonusPoints);
+    //   points += bonusPoints;
+    //   // add the word to our strong guesses set
+    //   RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
+    //   // update the display of guesses
+    //   updatePreviousGuesses(userInput);
+    //   // add the word and associated info to the final guesses array
+    //   RHYME_RUSH_GLOBALS.finalGuesses.push({
+    //     word: userInput,
+    //     pronunciation: testPronunciation,
+    //     distance: testDistance,
+    //     points: points,
+    //     category: "slant",
+    //   });
+  } else {
+    // near rhymes are a little more complicated
+    const threshold = Math.ceil(RHYME_RUSH_GLOBALS.maxEditDistance / 2);
+    if (testDistance <= threshold) {
+      if (testDistance === 0) {
+        testDistance = 1;
+      }
+      const points = Math.ceil(3 / testDistance);
+      RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
+      // updateScore(points);
+      // updatePreviousGuesses(userInput);
+      // updateStatusMessage(`"${userInput}" is a near rhyme! +${points} points`);
+      RHYME_RUSH_GLOBALS.finalGuesses.push({
+        word: userInput,
+        pronunciation: testPronunciation,
+        distance: testDistance,
+        points: points,
+        category: "near",
+      });
+    }
+    // if it's not a near rhyme, we assume we've checked all the other rhyme categories
+    // and we put it in the weak guesses set, update the status message
+    else {
+      RHYME_RUSH_GLOBALS.weakGuesses.add(userInput);
+      // updateStatusMessage(`"${userInput}" is not a close enough rhyme match`);
+    }
+  }
+}
+
+function isPerfectRhyme(testPronunciation, targetPronunciation) {
+  // get the stressed part of the pronunciation
+  const testStressed = getStressedRhymePart(testPronunciation);
+  const targetStressed = getStressedRhymePart(
+    RHYME_RUSH_GLOBALS.targetPronunciation
+  );
+  return testStressed === targetStressed;
+}
+
+// helper to get the stressed part of a pronunciation
+function getStressedRhymePart(pronunciation) {
+  let targetIndex = pronunciation.length;
+  const stresses = ["1", "2", "0"];
+
+  for (const stress of stresses) {
+    const index = pronunciation.lastIndexOf(stress);
+    if (index !== -1 && index < targetIndex) {
+      targetIndex = index;
+      break;
+    }
+  }
+  return pronunciation.slice(targetIndex - 2);
+}
+
+// function to get the closest pronunciation to the target pronunciation from multiple dictionary options for one spelling of a word
+// return the closest pronunciation and the edit distance
+function getClosestPronunciation(userInput) {
+  // find the pronunciation that has the fewest edits from the user input
+  // there might be only one pronunciation for a word
+  let bestPronunciation = "";
+  let bestDistance = Infinity;
+  let testASCIIBET = "";
+  if (BIG_DICT[userInput].length === 1) {
+    bestPronunciation = BIG_DICT[userInput][0];
+    testASCIIBET = convertToASCIIBET(bestPronunciation, ASCIIBET_PHONES);
+    bestDistance = editDistance(
+      RHYME_RUSH_GLOBALS.targetASCIIBET,
+      testASCIIBET
+    );
+    return [bestPronunciation, bestDistance];
+  }
+
+  for (const pronunciation of BIG_DICT[userInput]) {
+    testASCIIBET = convertToASCIIBET(pronunciation, ASCIIBET_PHONES);
+    const distance = editDistance(
+      RHYME_RUSH_GLOBALS.targetASCIIBET,
+      testASCIIBET
+    );
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestPronunciation = pronunciation;
+    }
+  }
+  return [bestPronunciation, bestDistance];
+}
+
+function editDistance(str1, str2) {
+  const len1 = str1.length;
+  const len2 = str2.length;
+
+  if (len1 === 0) return len2;
+  if (len2 === 0) return len1;
+
+  let matrix = [];
+
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      if (str1.charAt(i - 1) === str2.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+        );
+      }
+    }
+  }
+
+  return matrix[len1][len2];
 }
 
 // -- End Rhyme Scoring Utility Functions -------------------------------------
