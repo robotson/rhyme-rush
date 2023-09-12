@@ -8,14 +8,17 @@
   --courier-stack: "Courier Prime", Courier, Menlo, Consolas, Monaco,
     "Liberation Mono", "Lucida Console", monospace;
   --rhyme-rush-red: #ff2e47;
-  --off-white: #f9f9fb;
+  --bussin-blue: #2e5cff;
   --off-black: #1d1b1b;
   --panel-grey: #d9d9d9;
   --found-rhymes-grey: #f2f2f2;
+  --off-white: #f9f9fb;
   --doc-height: 100%;
   --checker-board-size: 20px;
   --circle-wipe-duration: 0.4s;
-  --label-text-size: 16px;
+  --status-transition: 250ms;
+  --status-duration: 2500ms;
+  --label-text-size: 12px;
 }
 body {
   margin: 0;
@@ -51,6 +54,15 @@ body {
 .red {
   color: var(--rhyme-rush-red);
 }
+.red-bg {
+  background-color: var(--rhyme-rush-red);
+}
+.blue-bg {
+  background-color: var(--bussin-blue);
+}
+.white {
+  color: #fff;
+}
 .courier {
   font-family: var(--courier-stack);
 }
@@ -82,6 +94,7 @@ body {
   background-position: 0 0,
     calc(var(--checker-board-size) / 2) calc(var(--checker-board-size) / 2);
 }
+
 /* init screen mobile styles */
 .init {
   margin: auto;
@@ -206,11 +219,11 @@ body {
   background-color: var(--off-white);
   min-height: 80vh;
   color: var(--off-black);
+  overflow-x: hidden;
 }
 .game .checker-stripe {
-  height: 36px;
-  background-size: 36px 36px;
-  background-position: 0 0, 18px 18px;
+  --checker-board-size: 36px;
+  height: calc(var(--checker-board-size) * 1.5);
 }
 .game .inner-wrapper {
   padding: 0 20px;
@@ -274,12 +287,41 @@ body {
   font-size: 21px;
   font-style: italic;
   font-weight: 600;
-  line-height: 132%; /* 27.72px */
+  line-height: 132%;
   width: 100%;
   height: 48px;
   margin-top: 5px;
   outline: none;
   text-transform: uppercase;
+}
+.status-message {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  display: flex;
+  color: #fff;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 132%;
+  letter-spacing: 0.49px;
+  text-transform: uppercase;
+  height: 100%;
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.status-message.in {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.status-message.out {
+  transform: translateX(100%);
+  opacity: 0;
 }
 
 /* styles for animations and transitions */
@@ -299,6 +341,9 @@ body {
   box-shadow: 0 0 25px 25px var(--off-white);
   transition: all var(--circle-wipe-duration) ease-in-out;
   z-index: 2;
+}
+.status-message {
+  transition: all var(--status-transition) ease-in-out;
 }
 .fade-in-scale {
   animation: fadeInScale 0.2s ease-in-out forwards;

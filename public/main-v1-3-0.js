@@ -1,8 +1,12 @@
 // GLOBALS
 // GLOBAL CONSTANTS
+
+// get the duration of status messages from the CSS root variable "--status-message-duration"
+
 const COUNTDOWN_DURATION = 0;
 const MOBILE_BREAKPOINT = 450;
 const CIRCLE_TRANSITION_DURATION = 400;
+const COUNTDOWN_INTERVAL = 800;
 const INITIAL_TIMER_VALUE = 89;
 const OFF_BLACK = "#1d1b1b";
 const ASCIIBET_PHONES = {
@@ -78,30 +82,48 @@ const ASCIIBET_PHONES = {
 };
 // GLOBAL ELEMENTS FOR DOM CONVENIENCE
 const RHYME_GOES_HERE_BOX = document.getElementById("rhyme-goes-here-box");
+const STATUS_CONTAINER = document.getElementById("status-container");
 
-// GLOBAL VARIABLES
-// variables for the game
-
-let BIG_DICT = {};
-
-// we should put the most commonly used global variables in an object that we namespace
+// NAMESPACE FOR GLOBAL VARIABLES
 const RHYME_RUSH_GLOBALS = {
   dictLoaded: false,
   isChallengeMode: false,
   clock_seconds: INITIAL_TIMER_VALUE,
   timer_interval: null,
   countdownInterval: null,
+  currentMessageTimeout: null,
   targetWord: "",
   targetPronunciation: "",
   targetASCIIBET: "",
+  score: 0,
   badGuesses: new Set(),
   strongGuesses: new Set(),
   weakGuesses: new Set(),
   finalGuesses: [],
 };
 
+let statusTimeoutID;
+
 // default game data --------------------------------------------------
 let STARTER_WORDS = ["RHYME", "TIME", "RUSH", "CRUSH"];
+let BIG_DICT = {};
+let STATUS_DURATION, STATUS_TRANSITION;
+// pulling these values from CSS but sometimes they don't load in time
+// guess i could just wrap in a domcontentloaded event listener
+document.addEventListener("DOMContentLoaded", function () {
+  STATUS_DURATION =
+    parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--status-duration"
+      )
+    ) || 2000;
+  STATUS_TRANSITION =
+    parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--status-transition"
+      )
+    ) || 250;
+});
 
 // functions for loading dictionary and starter words -----------------
 async function loadDictionary() {
@@ -109,7 +131,7 @@ async function loadDictionary() {
     const response = await fetch("./dictionary.json");
     BIG_DICT = await response.json();
     RHYME_RUSH_GLOBALS.dictLoaded = true;
-    handleChallengeWord();
+    //handleChallengeWord();
   } catch (error) {
     console.error("Error loading dictionaries:", error);
     alert("Error loading dictionaries. Please try refreshing the page.");
@@ -154,7 +176,7 @@ setViewportHeight();
 // Listen for resize
 window.addEventListener("resize", () => {
   VIEWPORT_HACK.isMobile = window.innerWidth <= MOBILE_BREAKPOINT; // Recheck if mobile
-  if (!isMobile) {
+  if (!VIEWPORT_HACK.isMobile) {
     // On desktop, revert to normal behavior
     VIEWPORT_HACK.viewportHeight = window.innerHeight;
     setViewportHeight();
@@ -199,6 +221,18 @@ function getMaxDistance(x, y) {
   return Math.sqrt(maxX ** 2 + maxY ** 2);
 }
 function startCountdown(event) {
+  // HACK TO GET AROUND MOBILE KEYBOARD ISSUE on IOS
+  const dumb = document.createElement("input");
+  dumb.setAttribute("type", "text");
+  dumb.setAttribute("enterkeyhint", "go");
+  dumb.style.position = "absolute";
+  dumb.style.opacity = 0;
+  dumb.style.height = 0;
+  dumb.style.width = 0;
+  dumb.style.fontSize = "16px";
+  document.body.prepend(dumb);
+  dumb.focus();
+
   const countdownElement = document.getElementsByClassName("counter")[0];
   const countdownScreen = document.getElementsByClassName("get-ready")[0];
   const initScreen = document.getElementsByClassName("init")[0];
@@ -256,6 +290,10 @@ function startCountdown(event) {
         clearInterval(RHYME_RUSH_GLOBALS.countdownInterval);
         // document.getElementById("countdown").classList.add("hidden");
         startGame();
+        setTimeout(() => {
+          document.getElementById("rhyme-goes-here-box").focus();
+          dumb.remove();
+        }, CIRCLE_TRANSITION_DURATION + 10);
       } else {
         const element = document.getElementsByClassName(`step-${index}`)[0];
         element.classList.add("hidden");
@@ -269,24 +307,9 @@ function startCountdown(event) {
         countdownElement.textContent = countdownNumber;
         countdownNumber--;
       }
-    }, 800);
+    }, COUNTDOWN_INTERVAL);
   }, CIRCLE_TRANSITION_DURATION); // same duration as the CSS transition
 
-  // HACK TO GET AROUND MOBILE KEYBOARD ISSUE on IOS
-  const dumb = document.createElement("input");
-  dumb.setAttribute("type", "text");
-  dumb.setAttribute("enterkeyhint", "go");
-  dumb.style.position = "absolute";
-  dumb.style.opacity = 0;
-  dumb.style.height = 0;
-  dumb.style.width = 0;
-  dumb.style.fontSize = "16px";
-  document.body.prepend(dumb);
-  dumb.focus();
-  setTimeout(() => {
-    document.getElementById("rhyme-goes-here-box").focus();
-    dumb.remove();
-  }, 3010);
   // END HACK
 }
 
@@ -344,8 +367,6 @@ function startGame() {
     // get a random word from the starter words array
     const candidateWord =
       STARTER_WORDS[Math.floor(Math.random() * STARTER_WORDS.length)];
-    // normalize the word
-    // targetWord = "rhyme";
     RHYME_RUSH_GLOBALS.targetWord = normalize(candidateWord);
     // make sure it's in the dictionary
     while (!pronunciationExists(RHYME_RUSH_GLOBALS.targetWord)) {
@@ -396,8 +417,7 @@ function submitWord(event) {
   if (userInput === "") return;
   // prevent submitting the same word as the target word
   if (userInput === RHYME_RUSH_GLOBALS.targetWord) {
-    //updateStatusMessage("You can't rhyme with the target word!");
-    console.log("You can't rhyme with the target word!");
+    updateStatusMessage("You can't rhyme with the target word!", "red-bg");
     RHYME_GOES_HERE_BOX.value = "";
     return;
   }
@@ -405,24 +425,22 @@ function submitWord(event) {
   if (pronunciationExists(userInput)) {
     // see if the user has already guessed this word
     if (RHYME_RUSH_GLOBALS.strongGuesses.has(userInput)) {
-      //updateStatusMessage(`Already found "${userInput}"`);
-      console.log(`Already found "${userInput}"`);
+      updateStatusMessage(`Already found this rhyme "${userInput}"`, "red-bg");
     } else if (RHYME_RUSH_GLOBALS.weakGuesses.has(userInput)) {
-      //updateStatusMessage(`"${userInput}" already guessed`);
-      console.log(`"${userInput}" already guessed`);
+      updateStatusMessage(`"${userInput}" already guessed`, "red-bg");
     } else {
       handleKnownPronunciation(userInput);
-      // console.log("handleKnownPronunciation");
     }
   } else {
     // see if the user has already guessed this word
     if (RHYME_RUSH_GLOBALS.badGuesses.has(userInput)) {
-      //updateStatusMessage(`Already tried unknown word "${userInput}"`);
-      console.log(`Already tried unknown word "${userInput}"`);
+      updateStatusMessage(
+        `Already tried unknown word "${userInput}"`,
+        "red-bg"
+      );
     } else {
       // update status to show that the word is not in the dictionary
-      //updateStatusMessage(`"${userInput}" not found in dictionary`);
-      console.log(`"${userInput}" not found in dictionary`);
+      updateStatusMessage(`"${userInput}" not found in dictionary`, "red-bg");
       // add the word to the bad guesses set
       RHYME_RUSH_GLOBALS.badGuesses.add(userInput);
     }
@@ -432,7 +450,13 @@ function submitWord(event) {
 
 // RHYME SCORING UTILITY FUNCTIONS --------------------------------------------
 function normalize(word) {
-  return word.trim().toUpperCase();
+  // remove all characters that aren't letters, numbers, spaces, or apostrophes
+  let sanitizedWord = word.replace(/[^a-zA-Z0-9\s']/g, "");
+  // remove leading and trailing whitespace
+  sanitizedWord = sanitizedWord.trim();
+  // convert to uppercase
+  sanitizedWord = sanitizedWord.toUpperCase();
+  return sanitizedWord;
 }
 //check if pronunciation exists in dictionary
 function pronunciationExists(word) {
@@ -459,7 +483,7 @@ function handleKnownPronunciation(userInput) {
   // we assume that we haven't already guessed this word
   // find the pronunciation that has the fewest edits from the user input
   const [testPronunciation, testDistance] = getClosestPronunciation(userInput);
-
+  const quotedUserInput = `"${userInput}"`;
   // first we check to see if the pronunciation is a perfect rhyme
   if (
     isPerfectRhyme(testPronunciation, RHYME_RUSH_GLOBALS.targetPronunciation)
@@ -468,21 +492,21 @@ function handleKnownPronunciation(userInput) {
     let points = 0;
     if (testDistance === 0) {
       // update status message because this is a "rich rhyme"
-      // updateStatusMessage(`"${userInput}" is a rich rhyme! +30 points`);
-      console.log(`"${userInput}" is a rich rhyme! +30 points`);
-      // updateScore(30);
+      updateStatusMessage(`"Rich rhyme! +30`, "blue-bg", quotedUserInput);
+      updateScore(30);
       points = 30;
     } else {
       // calculate bonus points for a perfect rhyme as the inverse of the edit distance
       const bonusPoints = Math.ceil(10 / testDistance);
 
       // update status message to show perfect rhyme, 10 points plus bonus points
-      // updateStatusMessage(
-      //   `Perfect rhyme! +10 points +${bonusPoints} phonetic bonus`
-      // );
-      console.log(`Perfect rhyme! +10 points +${bonusPoints} phonetic bonus`);
+      updateStatusMessage(
+        `Perfect rhyme! +${10 + bonusPoints}`,
+        "blue-bg",
+        quotedUserInput
+      );
       // update the score
-      // updateScore(10 + bonusPoints);
+      updateScore(10 + bonusPoints);
       points = 10 + bonusPoints;
     }
     // add the word to our strong guesses set
@@ -566,9 +590,9 @@ function handleKnownPronunciation(userInput) {
       }
       const points = Math.ceil(3 / testDistance);
       RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
-      // updateScore(points);
+      updateScore(points);
       // updatePreviousGuesses(userInput);
-      // updateStatusMessage(`"${userInput}" is a near rhyme! +${points} points`);
+      updateStatusMessage(`"${userInput}" is a near rhyme! +${points}`);
       RHYME_RUSH_GLOBALS.finalGuesses.push({
         word: userInput,
         pronunciation: testPronunciation,
@@ -581,7 +605,11 @@ function handleKnownPronunciation(userInput) {
     // and we put it in the weak guesses set, update the status message
     else {
       RHYME_RUSH_GLOBALS.weakGuesses.add(userInput);
-      // updateStatusMessage(`"${userInput}" is not a close enough rhyme match`);
+      updateStatusMessage(
+        "Not a close enough match",
+        "red-bg",
+        quotedUserInput
+      );
     }
   }
 }
@@ -694,4 +722,52 @@ function updateNumberPanel(number, panel) {
   tensDigit.textContent = tens;
   onesDigit.textContent = ones;
 }
+
+// function to update the score and display it
+function updateScore(points) {
+  RHYME_RUSH_GLOBALS.score += points;
+  updateNumberPanel(RHYME_RUSH_GLOBALS.score, "scoreboard-number-container");
+}
+
+function updateStatusMessage(topLine, type = "blue-bg", word = "") {
+  // Remove any existing timeouts
+  if (RHYME_RUSH_GLOBALS.currentMessageTimeout) {
+    clearTimeout(RHYME_RUSH_GLOBALS.currentMessageTimeout);
+  }
+  // Get or create the message container element
+  let statusMessage = document.querySelector(".status-message");
+  if (statusMessage) {
+    const existingMessage = statusMessage;
+    existingMessage.classList.add("out");
+    setTimeout(() => {
+      existingMessage.remove();
+    }, STATUS_TRANSITION); // should match the CSS transition time
+  }
+  statusMessage = document.createElement("div");
+  statusMessage.className = `status-message ${type}`;
+
+  statusMessage.appendChild(document.createTextNode(topLine));
+  statusMessage.appendChild(document.createElement("br"));
+  statusMessage.appendChild(document.createTextNode(word));
+  STATUS_CONTAINER.appendChild(statusMessage);
+  console.log(statusMessage.innerHTML);
+  // // Trigger reflow to restart the CSS transition
+  void statusMessage.offsetWidth;
+
+  // Fade in the message
+  statusMessage.classList.add("in");
+
+  // Set a timeout to fade out and remove the message
+  RHYME_RUSH_GLOBALS.currentMessageTimeout = setTimeout(() => {
+    // Fade out the message
+    statusMessage.classList.remove("in");
+    statusMessage.classList.add("out");
+
+    setTimeout(() => {
+      statusMessage.remove();
+    }, STATUS_TRANSITION); // should match the CSS transition time
+  }, STATUS_DURATION); // Display each message for 3 secondsx
+  console.log("leaving update status message");
+}
+
 // -- End Display Helper Functions --------------------------------------------

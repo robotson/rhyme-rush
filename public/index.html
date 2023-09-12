@@ -34,7 +34,7 @@
     <title>Rhyme Rush</title>
 
     <script src="/main-v1-3-0.js" defer></script>
-    <script src="/main-v1-2-1.js" defer></script>
+    <!-- <script src="/main-v1-2-1.js" defer></script> -->
   </head>
   <body>
     <noscript>
@@ -70,6 +70,7 @@
           <button
             id="get-this-party-started-button"
             class="reset start-button red"
+            autofocus
           >
             START GAME
           </button>
@@ -95,7 +96,7 @@
 
     <!-- game screen -->
     <div class="game hidden">
-      <div class="status checker-stripe"></div>
+      <div id="status-container" class="status checker-stripe relative"></div>
       <div class="inner-wrapper">
         <!-- score and time displays -->
         <div class="boards">
@@ -130,6 +131,7 @@
             type="text"
             placeholder="TYPE YOUR RHYME HERE"
             enterkeyhint="go"
+            autocapitalize="characters"
           />
         </form>
       </div>
@@ -301,8 +303,13 @@
             cols="50"
             readonly
           ></textarea>
-          <input id="challenge-link" type="text" readonly
-          value="https://rhymerush.com/challenge" / class="hidden">
+          <input
+            id="challenge-link"
+            type="text"
+            readonly
+            value="https://rhymerush.com/challenge"
+            class="hidden"
+          />
           <div class="challenge-modal-button-group">
             <button id="copy-challenge-message">Copy Challenge Message</button>
             <button id="copy-challenge-link">Copy Link Only</button>

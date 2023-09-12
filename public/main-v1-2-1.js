@@ -1,4 +1,3 @@
-const initialState = document.getElementById("initial-state");
 const endState = document.getElementById("end-state");
 const modal = document.getElementById("instruction-modal");
 const challengeModal = document.getElementById("challenge-modal");
@@ -6,7 +5,6 @@ const challengeFriendButton = document.getElementById("challenge-button");
 const closeChallengeModalButton = document.getElementById(
   "close-challenge-modal"
 );
-const nav = document.getElementById("nav");
 const howToButton = document.getElementById("how-to-play");
 const modalCloseButton = document.getElementsByClassName("close-button")[0];
 const modalBottomDoneButton = document.getElementById("modal-bottom-done");
@@ -32,22 +30,11 @@ const welcomeChallengeMessage = document.getElementById(
 const warningChallengeMessage = document.getElementById(
   "warning-challenge-message"
 );
-const NUM_SECONDS = 89;
-// convert num seconds into initial time display
-const INITIAL_TIME_DISPLAY = `${Math.floor((NUM_SECONDS + 1) / 60)}:${
-  (NUM_SECONDS + 1) % 60 < 10 ? "0" : ""
-}${(NUM_SECONDS + 1) % 60}`;
-``;
+
 const baseURL = window.location.origin;
-// array of starter words
 
 let challengeLink = `${baseURL}/challenge/`;
 let maxEditDistance = 0;
-let statusTimeoutID;
-let countdownInterval;
-let score = 0;
-let timer;
-let timeLeft = NUM_SECONDS; // 2 minutes in seconds minus 1 for the delay in loading
 
 function handleChallengeWord() {
   const pathArray = window.location.pathname.split("/");
@@ -221,34 +208,6 @@ function resetGameState() {
   warningChallengeMessage.classList.add("collapsed");
 }
 
-function updateStatusMessage(message) {
-  if (statusTimeoutID) clearTimeout(statusTimeoutID);
-
-  // Remove any existing fade-out class and set opacity back to 1
-  statusDisplay.classList.remove("fade-out");
-  statusDisplay.style.opacity = 1;
-
-  // Update the message
-  statusDisplay.textContent = message;
-
-  // Trigger reflow to restart the animation
-  void statusDisplay.offsetWidth;
-
-  // Add the fade-out class to start the fade-out animation
-  statusDisplay.classList.add("fade-out");
-
-  // Clear the message and remove the fade-out class after the animation duration (3000ms)
-  statusTimeoutID = setTimeout(() => {
-    statusDisplay.textContent = "";
-    statusDisplay.classList.remove("fade-out");
-  }, 3000);
-}
-
-// function to update the score and display it
-function updateScore(points) {
-  score += points;
-  scoreDisplay.textContent = score;
-}
 // function to update the previous guesses display
 
 function updatePreviousGuesses(guess) {
