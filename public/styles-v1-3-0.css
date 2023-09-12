@@ -16,7 +16,7 @@
   --doc-height: 100%;
   --checker-board-size: 20px;
   --circle-wipe-duration: 0.4s;
-  --status-transition: 250ms;
+  --status-transition: 200ms;
   --status-duration: 2500ms;
   --label-text-size: 12px;
 }
