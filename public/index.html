@@ -21,15 +21,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;1,600;1,900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Courier+Prime&family=Montserrat:ital,wght@0,400;0,600;1,600;1,900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Montserrat:ital,wght@0,400;0,600;1,600;1,900&display=swap"
       rel="stylesheet"
     />
     <base href="/" />
-    <link rel="stylesheet" href="/styles-v1-2-1.css" />
+    <!-- <link rel="stylesheet" href="/styles-v1-2-1.css" /> -->
     <link rel="stylesheet" href="/styles-v1-3-0.css" />
     <title>Rhyme Rush</title>
 
@@ -49,15 +45,6 @@
         You need to enable JavaScript to use this application.
       </div>
     </noscript>
-    <!-- unused elements from old design-->
-    <div class="hidden unused">
-      <div id="nav" class="hidden"></div>
-      <div id="initial-state" class="hidden"></div>
-      <h1 id="countdown-number"></h1>
-      <div id="playing-state"></div>
-      <form id="user-input-form"></form>
-      <div id="start-button"></div>
-    </div>
     <div class="nav hidden">RHYME RUSH</div>
     <!-- initial screen -->
     <div class="init relative">
@@ -121,7 +108,7 @@
         </div>
         <!-- target word display -->
         <div class="target-word-container">
-          <div class="target-word-label">TARGET WORD</div>
+          <div class="target-word-label hidden">TARGET WORD</div>
           <div class="target-word"></div>
         </div>
         <!-- user input form -->
@@ -132,48 +119,29 @@
             placeholder="TYPE YOUR RHYME HERE"
             enterkeyhint="go"
             autocapitalize="characters"
+            autocomplete="off"
           />
         </form>
       </div>
       <!-- found rhymes display -->
-      <div class="found-rhymes-wrapper"></div>
-    </div>
-
-    <!-- <div id="playing-state" class="hidden">
-      <div id="wrapper">
-        <div id="first-row" class="screen-spanning">
-          <div id="score-box">
-            <p>Score:</p>
-            <p id="score">0</p>
-          </div>
-          <div id="status-box">
-            <p id="status-message"></p>
-          </div>
-          <div id="timer-box">
-            <p>Time:</p>
-            <p id="timer">2:00</p>
-          </div>
+      <div class="found-rhymes-wrapper hidden">
+        <div class="header">
+          <div class="label">FOUND RHYMES</div>
+          <!-- <div class="chevron-down">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="9"
+              viewBox="0 0 14 9"
+              fill="none"
+            >
+              <path d="M1 1L7.23448 8L13 1" stroke="#1D1B1B" />
+            </svg>
+          </div> -->
         </div>
-
-        <div id="second-row">
-          <p>Target word:</p>
-          <div id="target-box" class="screen-spanning">
-            <p id="target-word"></p>
-          </div>
-        </div>
+        <div id="found-rhymes-min" class="minimized"></div>
       </div>
-
-      <form id="user-input-form">
-        <input
-          id="user-input"
-          type="text"
-          enterkeyhint="go"
-          class="screen-spanning"
-        />
-      </form>
-
-      <div id="guesses-row" class="screen-spanning transparent"></div>
-    </div> -->
+    </div>
 
     <div id="end-state" class="hidden">
       <h1>Your Score: <span id="final-score"></span></h1>
@@ -222,7 +190,7 @@
     </div> -->
 
     <!-- Modals -->
-    <div id="instruction-modal" class="modal">
+    <div id="instruction-modal" class="modal hidden">
       <div class="modal-content">
         <span class="close-button">&times;</span>
 
@@ -286,7 +254,7 @@
       </div>
     </div>
     <!-- Challenge Modal -->
-    <div id="challenge-modal" class="modal">
+    <div id="challenge-modal" class="modal hidden">
       <div class="modal-content">
         <span id="close-challenge-modal" class="close-button">&times;</span>
         <h2>Challenge a Friend</h2>

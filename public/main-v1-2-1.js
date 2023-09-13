@@ -210,20 +210,6 @@ function resetGameState() {
 
 // function to update the previous guesses display
 
-function updatePreviousGuesses(guess) {
-  if (previousGuessesDisplay.childElementCount === 0) {
-    previousGuessesDisplay.classList.remove("transparent");
-  }
-
-  const guessElement = document.createElement("span");
-  guessElement.textContent = guess;
-  // insert at the beginning of the list
-  previousGuessesDisplay.insertBefore(
-    guessElement,
-    previousGuessesDisplay.firstChild
-  );
-}
-
 // EVENT LISTENERS
 
 // Listen for the restart button to be clicked

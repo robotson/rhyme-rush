@@ -1,9 +1,18 @@
 // GLOBALS
 // GLOBAL CONSTANTS
 
+//debugging function to print the client's screen dimensions in the placeholder text
+function printScreenDimensions() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const screenDimensions = `${width} x ${height}`;
+  const input = document.getElementById("rhyme-goes-here-box");
+  input.setAttribute("placeholder", screenDimensions);
+}
+//printScreenDimensions();
 // get the duration of status messages from the CSS root variable "--status-message-duration"
 
-const COUNTDOWN_DURATION = 0;
+const COUNTDOWN_DURATION = 3;
 const MOBILE_BREAKPOINT = 450;
 const CIRCLE_TRANSITION_DURATION = 400;
 const COUNTDOWN_INTERVAL = 800;
@@ -149,49 +158,6 @@ async function loadStarterWords() {
 }
 loadStarterWords();
 
-//-----------------------------------------------------------------------------
-// fix document height on mobile browsers/ prevent resizing on pull-to-refresh
-// Function to set the height
-const VIEWPORT_HACK = {
-  viewportHeight: window.innerHeight,
-  lastScrollY: window.scrollY,
-  isMobile: window.innerWidth <= MOBILE_BREAKPOINT, // Adjust 768 to your mobile breakpoint
-};
-const setViewportHeight = () => {
-  document.documentElement.style.setProperty(
-    "--doc-height",
-    `${VIEWPORT_HACK.viewportHeight}px`
-  );
-};
-// Function to determine if we should update the height
-const shouldUpdateHeight = () => {
-  // On mobile and not at the top of the viewport (not a pull-to-refresh)
-  return (
-    VIEWPORT_HACK.isMobile &&
-    (window.scrollY > 1 || VIEWPORT_HACK.lastScrollY > 1)
-  );
-};
-// Initial set
-setViewportHeight();
-// Listen for resize
-window.addEventListener("resize", () => {
-  VIEWPORT_HACK.isMobile = window.innerWidth <= MOBILE_BREAKPOINT; // Recheck if mobile
-  if (!VIEWPORT_HACK.isMobile) {
-    // On desktop, revert to normal behavior
-    VIEWPORT_HACK.viewportHeight = window.innerHeight;
-    setViewportHeight();
-  } else if (shouldUpdateHeight()) {
-    VIEWPORT_HACK.viewportHeight = window.innerHeight;
-    setViewportHeight();
-  }
-});
-// Listen for scroll
-window.addEventListener("scroll", () => {
-  VIEWPORT_HACK.lastScrollY = window.scrollY;
-});
-
-// -- End Fix doc height block ------------------------------------------------
-
 // EVENT LISTENERS -----------------------------------------------------------
 // Listen for the start button to be clicked
 document
@@ -315,6 +281,20 @@ function startCountdown(event) {
 
 // -- End Countdown block -----------------------------------------------------
 
+// we need a new random number generator based on if browser supports crypto
+// it should take in a min and max value and return a random number between them
+// if crypto is not supported, we'll use Math.random()
+function getRandomNumber(min, max) {
+  if (window.crypto) {
+    const randomBuffer = new Uint32Array(1);
+    window.crypto.getRandomValues(randomBuffer);
+    const randomNumber = randomBuffer[0] / (0xffffffff + 1);
+    return Math.floor(randomNumber * (max - min + 1)) + min;
+  } else {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+}
+
 // Start Game block -----------------------------------------------------------
 
 function startGame() {
@@ -355,7 +335,7 @@ function startGame() {
   nav.style.color = "var(--off-white)";
   // Hide the count screen and show the game screen after the animation
   setTimeout(() => {
-    document.body.style.backgroundColor = "var(--off-white)";
+    document.body.style.backgroundColor = "var(--found-rhymes-grey)";
     countdownScreen.classList.add("hidden");
     gameScreen.classList.remove("hidden");
   }, CIRCLE_TRANSITION_DURATION);
@@ -366,12 +346,12 @@ function startGame() {
   if (!RHYME_RUSH_GLOBALS.isChallengeMode) {
     // get a random word from the starter words array
     const candidateWord =
-      STARTER_WORDS[Math.floor(Math.random() * STARTER_WORDS.length)];
+      STARTER_WORDS[getRandomNumber(0, STARTER_WORDS.length - 1)];
     RHYME_RUSH_GLOBALS.targetWord = normalize(candidateWord);
     // make sure it's in the dictionary
     while (!pronunciationExists(RHYME_RUSH_GLOBALS.targetWord)) {
       RHYME_RUSH_GLOBALS.targetWord =
-        STARTER_WORDS[Math.floor(Math.random() * STARTER_WORDS.length)];
+        STARTER_WORDS[getRandomNumber(0, STARTER_WORDS.length - 1)];
       RHYME_RUSH_GLOBALS.targetWord = normalize(RHYME_RUSH_GLOBALS.targetWord);
     }
   }
@@ -399,7 +379,7 @@ function startTimer() {
     );
     if (RHYME_RUSH_GLOBALS.clock_seconds <= 0) {
       clearInterval(RHYME_RUSH_GLOBALS.timer_interval);
-      // textInput.blur();
+      RHYME_GOES_HERE_BOX.blur();
       // endGame();
     }
     RHYME_RUSH_GLOBALS.clock_seconds--;
@@ -408,6 +388,21 @@ function startTimer() {
 
 // -- End Start Game block ----------------------------------------------------
 
+// End Game block -------------------------------------------------------------
+function endGame() {
+  // analytics event
+  gtag("event", "game_end", {
+    event_category: "game",
+    event_label: "Game Ended",
+    value: RHYME_RUSH_GLOBALS.score,
+  });
+
+  // hide the game screen and show the end screen
+  document.querySelector(".game").classList.add("hidden");
+  document.querySelector(".end").classList.remove("hidden");
+}
+
+// Playing game stuff ---------------------------------------------------------
 // Submit Word block ----------------------------------------------------------
 function submitWord(event) {
   event.preventDefault();
@@ -450,8 +445,12 @@ function submitWord(event) {
 
 // RHYME SCORING UTILITY FUNCTIONS --------------------------------------------
 function normalize(word) {
+  // convert any smart quotes to straight quotes
+  let sanitizedWord = word.replace(/[\u2018\u2019]/g, "'");
+  // same for double quoets
+  sanitizedWord = sanitizedWord.replace(/[\u201C\u201D]/g, '"');
   // remove all characters that aren't letters, numbers, spaces, or apostrophes
-  let sanitizedWord = word.replace(/[^a-zA-Z0-9\s']/g, "");
+  sanitizedWord = sanitizedWord.replace(/[^a-zA-Z0-9\s']/g, "");
   // remove leading and trailing whitespace
   sanitizedWord = sanitizedWord.trim();
   // convert to uppercase
@@ -492,7 +491,7 @@ function handleKnownPronunciation(userInput) {
     let points = 0;
     if (testDistance === 0) {
       // update status message because this is a "rich rhyme"
-      updateStatusMessage(`"Rich rhyme! +30`, "blue-bg", quotedUserInput);
+      updateStatusMessage(`Identical rhyme! +30`, "blue-bg", quotedUserInput);
       updateScore(30);
       points = 30;
     } else {
@@ -512,7 +511,7 @@ function handleKnownPronunciation(userInput) {
     // add the word to our strong guesses set
     RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
     // update the display of guesses
-    // updatePreviousGuesses(userInput);
+    updateFoundRhymes(userInput);
     // add the word and associated info to the final guesses array
     RHYME_RUSH_GLOBALS.finalGuesses.push({
       word: userInput,
@@ -546,7 +545,7 @@ function handleKnownPronunciation(userInput) {
     // add the word to our strong guesses set
     RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
     // update the display of guesses
-    //updatePreviousGuesses(userInput);
+    updateFoundRhymes(userInput);
     // add the word and associated info to the final guesses array
     RHYME_RUSH_GLOBALS.finalGuesses.push({
       word: userInput,
@@ -578,7 +577,7 @@ function handleKnownPronunciation(userInput) {
     // add the word to our strong guesses set
     RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
     // update the display of guesses
-    // updatePreviousGuesses(userInput);
+    updateFoundRhymes(userInput);
     // add the word and associated info to the final guesses array
     RHYME_RUSH_GLOBALS.finalGuesses.push({
       word: userInput,
@@ -597,8 +596,8 @@ function handleKnownPronunciation(userInput) {
       const points = Math.ceil(3 / testDistance);
       RHYME_RUSH_GLOBALS.strongGuesses.add(userInput);
       updateScore(points);
-      // updatePreviousGuesses(userInput);
-      updateStatusMessage(`"${userInput}" is a near rhyme! +${points}`);
+      updateFoundRhymes(userInput);
+      updateStatusMessage(`Near rhyme! +${points}`, "blue-bg", quotedUserInput);
       RHYME_RUSH_GLOBALS.finalGuesses.push({
         word: userInput,
         pronunciation: testPronunciation,
@@ -612,9 +611,8 @@ function handleKnownPronunciation(userInput) {
     else {
       RHYME_RUSH_GLOBALS.weakGuesses.add(userInput);
       updateStatusMessage(
-        "Not a close enough match",
-        "red-bg",
-        quotedUserInput
+        `${quotedUserInput} is not a close enough match`,
+        "red-bg"
       );
     }
   }
@@ -836,6 +834,29 @@ function updateStatusMessage(topLine, type = "blue-bg", word = "") {
       statusMessage.remove();
     }, STATUS_TRANSITION); // should match the CSS transition time
   }, STATUS_DURATION); // Display each message for 3 secondsx
+}
+
+// function to update the display of found rhymes panel
+function updateFoundRhymes(word) {
+  const foundRhymesMin = document.getElementById("found-rhymes-min");
+
+  // if this is the first word being added lets show the container
+  if (foundRhymesMin.childElementCount === 0) {
+    document.querySelector(".found-rhymes-wrapper").classList.remove("hidden");
+  }
+  // create a new element to display the word
+  const wordElement = document.createElement("span");
+  wordElement.textContent = word;
+
+  // insert at the beginning of the list
+  foundRhymesMin.insertBefore(wordElement, foundRhymesMin.firstChild);
+  // Force a reflow (this makes the transition work)
+  void wordElement.offsetWidth;
+
+  // add width to this element the size of its number of characters in "ch" units
+  wordElement.style.width = `${word.length}ch`;
+  // Add the 'visible' class to trigger the transition
+  wordElement.classList.add("visible");
 }
 
 // -- End Display Helper Functions --------------------------------------------
