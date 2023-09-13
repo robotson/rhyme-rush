@@ -51,6 +51,12 @@ body {
   letter-spacing: 0.24px;
   transition: opacity var(--circle-wipe-duration) ease-in-out, color 0.5s ease;
 }
+.bold {
+  font-weight: 900;
+}
+.italic {
+  font-style: italic;
+}
 
 /* util classes */
 .relative {
@@ -278,12 +284,12 @@ body {
 /* .game .target-word-container {
   margin-top: 16px; 
 } */
-.game .target-word-label {
+/* .game .target-word-label {
   height: var(--label-text-size);
   text-align: left;
   font-family: var(--courier-stack);
   font-size: var(--label-text-size);
-}
+} */
 .game .target-word {
   height: calc(var(--base-size) * 2);
   background-color: var(--off-black);
@@ -387,6 +393,104 @@ body {
   transform: scale(1);
 }
 
+/* end screen styles */
+.end {
+  padding-top: calc(2 * var(--base-size));
+  text-align: center;
+}
+.end .wrapper {
+  padding-bottom: calc(0.5 * var(--base-size));
+}
+.end .wrapper .score {
+  font-size: var(--base-size);
+  line-height: calc(3 * var(--base-size));
+}
+.end .checker-stripe {
+  margin: auto;
+  max-width: 72.5%;
+}
+.end .wrapper .button-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: calc(2 / 3 * var(--base-size));
+  margin-bottom: calc(1.65 * var(--base-size));
+}
+.button-group button {
+  font-size: calc(2 / 3 * var(--base-size));
+  background-color: white;
+  font-weight: 600;
+  height: calc(2 * var(--base-size));
+  width: calc(11 * var(--base-size));
+  border-radius: calc(5 / 4 * var(--base-size));
+  border-width: calc(var(--base-size) / 10);
+  border-style: solid;
+}
+#restart-button {
+  border-color: var(--rhyme-rush-red);
+  color: var(--rhyme-rush-red);
+}
+#challenge-button {
+  border-color: var(--bussin-blue);
+  color: var(--bussin-blue);
+}
+.end .header {
+  font-size: var(--base-size);
+  line-height: calc(3 * var(--base-size));
+}
+.end .rhymes-list-container {
+  font-family: var(--courier-stack);
+  display: flex;
+  flex-direction: column;
+  gap: var(--base-size);
+  width: fit-content;
+  margin: 0 auto 4ch auto;
+  font-size: calc(0.8 * var(--base-size));
+}
+.end .rhymes-list {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.66ch;
+  width: max-content;
+  margin: 0 auto 1ch auto;
+}
+
+.end .rhymes-list-container .label {
+  line-height: calc(1.5 * var(--base-size));
+  margin-bottom: 0.33ch;
+}
+
+.rhyme-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.word,
+.score {
+  min-width: 1ch;
+  white-space: nowrap;
+}
+
+.dots {
+  flex-grow: 1;
+  margin: 0 0.5ch;
+  min-width: 1ch;
+  display: flex;
+  align-items: center;
+}
+
+.dots::after {
+  content: "";
+  display: block;
+  height: calc(0.5 * var(--label-text-size));
+  border-bottom: 2px dotted var(--off-black);
+  flex-grow: 1;
+}
+
 /* styles for animations and transitions */
 .transition-circle {
   z-index: 1000;
@@ -442,14 +546,56 @@ body {
 }
 @media (max-width: 500px) and (max-height: 600px) {
   :root {
+    --checker-board-size: 16px;
     --base-size: 16px;
   }
 }
+/* mid size / tablet styles */
+@media (min-width: 800px) {
+  /* end screen column adjustments  */
 
+  /* .end .rhymes-list-container {
+    min-width: max-content;
+    margin: 0 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 4ch;
+  } */
+
+  .end .rhymes-list-container {
+    margin: 2ch auto;
+    display: grid;
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(25ch, 1fr)
+    ); /* 200px is the minimum width for each column */
+    max-width: min(calc(100% - 8ch), 120ch);
+    gap: 4ch; /* Adjust as needed */
+  }
+
+  /* .end .rhymes-list {
+    width: 100%;
+    flex-basis: calc(25% - 1ch);
+    flex-grow: 0;
+    flex-shrink: 1;
+    gap: 0.66ch;
+  } */
+  .end .rhymes-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.66ch;
+  }
+  /* end of end screen column adjustments  */
+}
 /* media query for desktop */
 @media (min-width: 1200px) {
   :root {
     --checker-board-size: 24px;
+    --base-size: 28px;
   }
   /* Desktop init screen styles */
   .init {
@@ -508,4 +654,45 @@ body {
     font-size: 24px;
     letter-spacing: 2.88px;
   }
+
+  /* Desktop End screen styles */
+  .end {
+    padding-top: 0;
+  }
+  .end .wrapper {
+    padding-bottom: 0;
+  }
+  .end .wrapper .score {
+    font-size: calc(2 * var(--base-size));
+    line-height: calc(4 * var(--base-size));
+  }
+
+  .end .checker-stripe {
+    --checker-board-size: calc(var(--base-size) * 36 / 24);
+    --dark-squares: var(--square-grey);
+    background-color: var(--found-rhymes-grey);
+    height: calc(var(--checker-board-size) * 1.5);
+    margin: 0;
+    max-width: 100%;
+  }
+
+  .end .checker-stripe.last {
+    display: none;
+  }
+
+  .end .wrapper .button-group {
+    flex-direction: row;
+    margin-bottom: calc(1 * var(--base-size));
+  }
+
+  .end .header {
+    font-size: calc(2 * var(--base-size));
+    line-height: calc(3 * var(--base-size));
+  }
+  .end .rhymes-list-container {
+    --base-size: 28px;
+  }
+  /* .end .rhymes-list-container .label {
+    line-height: calc(2 * var(--base-size));
+  } */
 }

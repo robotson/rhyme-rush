@@ -9,14 +9,15 @@ function printScreenDimensions() {
   const input = document.getElementById("rhyme-goes-here-box");
   input.setAttribute("placeholder", screenDimensions);
 }
+
 //printScreenDimensions();
 // get the duration of status messages from the CSS root variable "--status-message-duration"
 
-const COUNTDOWN_DURATION = 3;
+const COUNTDOWN_DURATION = 1; // 3 seconds
 const MOBILE_BREAKPOINT = 450;
 const CIRCLE_TRANSITION_DURATION = 400;
 const COUNTDOWN_INTERVAL = 800;
-const INITIAL_TIMER_VALUE = 89;
+const INITIAL_TIMER_VALUE = 0; // 89 seconds
 const OFF_BLACK = "#1d1b1b";
 const ASCIIBET_PHONES = {
   AH0: "!",
@@ -141,6 +142,15 @@ async function loadDictionary() {
     BIG_DICT = await response.json();
     RHYME_RUSH_GLOBALS.dictLoaded = true;
     //handleChallengeWord();
+
+    // console log the longest word in the dictionary
+    let longestWord = "";
+    for (const word in BIG_DICT) {
+      if (word.length > longestWord.length) {
+        longestWord = word;
+      }
+    }
+    console.log("Longest word in dictionary:", longestWord, longestWord.length);
   } catch (error) {
     console.error("Error loading dictionaries:", error);
     alert("Error loading dictionaries. Please try refreshing the page.");
@@ -380,7 +390,7 @@ function startTimer() {
     if (RHYME_RUSH_GLOBALS.clock_seconds <= 0) {
       clearInterval(RHYME_RUSH_GLOBALS.timer_interval);
       RHYME_GOES_HERE_BOX.blur();
-      // endGame();
+      endGame();
     }
     RHYME_RUSH_GLOBALS.clock_seconds--;
   }, 1000);
