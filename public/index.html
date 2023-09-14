@@ -17,7 +17,6 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- <meta name="viewport" content="viewport-fit=cover" /> -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,14 +24,14 @@
       rel="stylesheet"
     />
     <base href="/" />
-    <!-- <link rel="stylesheet" href="/styles-v1-2-1.css" /> -->
     <link rel="stylesheet" href="/styles-v1-3-0.css" />
     <title>Rhyme Rush</title>
 
     <script src="/main-v1-3-0.js" defer></script>
-    <!-- <script src="/main-v1-2-1.js" defer></script> -->
   </head>
   <body>
+    <!-- magic fading element -->
+    <div id="overlay"></div>
     <noscript>
       <div
         style="
@@ -52,11 +51,10 @@
         <div class="checker-stripe"></div>
         <div class="line-1">WELCOME TO</div>
         <div class="line-2 hero-text">RHYME RUSH</div>
-
         <div class="start-button-container">
           <button
             id="get-this-party-started-button"
-            class="reset start-button red"
+            class="start-button red"
             autofocus
           >
             START GAME
@@ -66,16 +64,21 @@
       </div>
       <div class="info-container bottom">
         <div class="courier">
+          <span id="challenge-is-good" class="challenge-notice hidden"
+            >You've been challenged!</span
+          >
+          <span id="challenge-is-bad" class="challenge-warning hidden"
+            >Uh-oh! The challenge link you've used seems to be invalid. Please
+            check the link again or start a new game.</span
+          >
           Guess as many rhymes as you can before the timer runs out!
         </div>
         <div class="how-to"><span id="how-to-play">ⓘ HOW TO PLAY</span></div>
       </div>
-      <div class="transition-circle"></div>
     </div>
     <!-- countdown screen -->
     <div class="get-ready relative hidden" id="countdown">
-      <div class="transition-circle"></div>
-      <div class="counter step-0 transparent">GET READY!</div>
+      <div class="counter step-0">GET READY!</div>
       <div class="counter counter-number step-1 transparent hidden">3</div>
       <div class="counter counter-number step-2 transparent hidden">2</div>
       <div class="counter counter-number step-3 transparent hidden">1</div>
@@ -88,12 +91,12 @@
         <!-- score and time displays -->
         <div class="boards">
           <!-- score side-->
-          <div class="scordboard board">
-            <div class="scoreboard-text">SCORE</div>
-            <div class="scoreboard-number-container panels">
-              <div class="scoreboard-number panel">0</div>
-              <div class="scoreboard-number panel">0</div>
-              <div class="scoreboard-number panel">0</div>
+          <div class="score board">
+            <div class="score-text">SCORE</div>
+            <div class="score-number-container panels">
+              <div class="score-number panel">0</div>
+              <div class="score-number panel">0</div>
+              <div class="score-number panel">0</div>
             </div>
           </div>
           <!-- time side-->
@@ -127,17 +130,6 @@
       <div class="found-rhymes-wrapper hidden">
         <div class="header">
           <div class="label">FOUND RHYMES</div>
-          <!-- <div class="chevron-down">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="9"
-              viewBox="0 0 14 9"
-              fill="none"
-            >
-              <path d="M1 1L7.23448 8L13 1" stroke="#1D1B1B" />
-            </svg>
-          </div> -->
         </div>
         <div id="found-rhymes-min" class="minimized"></div>
       </div>
@@ -147,7 +139,7 @@
       <div class="wrapper">
         <div class="checker-stripe"></div>
         <div class="score header bold italic">
-          YOUR SCORE: <span id="final-score">139</span>
+          YOUR SCORE: <span id="final-score"></span>
         </div>
         <div class="button-group">
           <button id="restart-button">NEW GAME</button>
@@ -157,106 +149,25 @@
       </div>
 
       <div class="rhymes">
-        <div class="header bold italic">INSTITUTION</div>
+        <div class="header bold italic">
+          TARGET WORD: <span id="end-screen-target-word-display"></span>
+        </div>
         <div class="rhymes-list-container">
-          <div class="perfect-rhymes">
+          <div class="perfect-rhymes hidden">
             <div class="label bold">PERFECT RHYMES</div>
-            <div class="rhymes-list">
-              <div class="rhyme-item">
-                <span class="word">RUSH</span>
-                <span class="dots"></span>
-                <span class="score">14</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">CRUSH</span>
-                <span class="dots"></span>
-                <span class="score">12</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">DEINSTITUTIONALIZE</span>
-                <span class="dots"></span>
-                <span class="score">11</span>
-              </div>
-            </div>
+            <div class="rhymes-list"></div>
           </div>
-          <div class="off-rhymes">
+          <div class="off-rhymes hidden">
             <div class="label bold">OFF RHYMES</div>
-            <div class="rhymes-list">
-              <div class="rhyme-item">
-                <span class="word">DEINSTITION</span>
-                <span class="dots"></span>
-                <span class="score">9</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">TRUST</span>
-                <span class="dots"></span>
-                <span class="score">7</span>
-              </div>
-            </div>
+            <div class="rhymes-list"></div>
           </div>
-          <div class="slant-rhymes">
+          <div class="slant-rhymes hidden">
             <div class="label bold">SLANT RHYMES</div>
-            <div class="rhymes-list">
-              <div class="rhyme-item">
-                <span class="word">WORD</span>
-                <span class="dots"></span>
-                <span class="score">10</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">ABSURD</span>
-                <span class="dots"></span>
-                <span class="score">1</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">DUOUOUOO</span>
-                <span class="dots"></span>
-                <span class="score">6</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">GRASS</span><span class="dots"></span
-                ><span class="score">9</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">BLAST</span><span class="dots"></span
-                ><span class="score">7</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">GRASS</span><span class="dots"></span
-                ><span class="score">9</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">BLAST</span><span class="dots"></span
-                ><span class="score">7</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">REST</span>
-                <span class="dots"></span>
-                <span class="score">5</span>
-              </div>
-            </div>
+            <div class="rhymes-list"></div>
           </div>
-          <div class="near-rhymes">
+          <div class="near-rhymes hidden">
             <div class="label bold">NEAR RHYMES</div>
-            <div class="rhymes-list">
-              <div class="rhyme-item">
-                <span class="word">DEINSTITUTIONALIZATION</span>
-                <span class="dots"></span>
-                <span class="score">10</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">GRASS</span><span class="dots"></span
-                ><span class="score">9</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">BLAST</span><span class="dots"></span
-                ><span class="score">7</span>
-              </div>
-              <div class="rhyme-item">
-                <span class="word">SNAGLETOOTH</span>
-                <span class="dots"></span>
-                <span class="score">1</span>
-              </div>
-            </div>
+            <div class="rhymes-list"></div>
           </div>
         </div>
       </div>
@@ -272,106 +183,73 @@
       </div>
     </div>
 
-    <!-- <div id="playing-state" class="hidden">
-      <div id="wrapper">
-        <div id="first-row" class="screen-spanning">
-          <div id="score-box">
-            <p>Score:</p>
-            <p id="score">0</p>
-          </div>
-          <div id="status-box">
-            <p id="status-message"></p>
-          </div>
-          <div id="timer-box">
-            <p>Time:</p>
-            <p id="timer">2:00</p>
-          </div>
-        </div>
-
-        <div id="second-row">
-          <p>Target word:</p>
-          <div id="target-box" class="screen-spanning">
-            <p id="target-word"></p>
-          </div>
-        </div>
-      </div>
-
-      <form id="user-input-form">
-        <input
-          id="user-input"
-          type="text"
-          enterkeyhint="go"
-          class="screen-spanning"
-        />
-      </form>
-
-      <div id="guesses-row" class="screen-spanning transparent"></div>
-    </div> -->
-
     <!-- Modals -->
     <div id="instruction-modal" class="modal hidden">
       <div class="modal-content">
         <span class="close-button">&times;</span>
 
-        <h2>How To Play Rhyme Rush</h2>
-        <p>
-          <strong
-            >Come up with rhymes that match the target word to score points
-            before the timer runs out!</strong
-          >
-        </p>
+        <h2>How to Play Rhyme Rush</h2>
 
-        <ul id="how-to-list">
+        <strong>Objective:</strong> Match words that rhyme with the given target
+        word to score points. You're racing against the clock, so be quick!
+
+        <h4>Basic Steps:</h4>
+        <ol>
           <li>
-            Type one word at a time in the text box and hit enter to submit
+            <strong>Type & Submit:</strong> Enter one word at a time in the text
+            box and hit enter to submit it.
           </li>
           <li>
-            Words that are phonetically closer are given extra bonus points
+            <strong>Scoring:</strong> Earn more points for closer rhymes. Bonus
+            points are awarded based on phonetic similarity.
           </li>
-        </ul>
+        </ol>
 
-        <p><strong>Rhyme Category Examples:</strong></p>
-
-        <div class="examples">
-          <p>
-            <strong>Perfect Rhymes</strong> exactly match the stressed vowel
-            onward <br />(10 points + phonetic similarity bonus)
-          </p>
-          <ul>
-            <li>"Rhyme" - Time, Climb, Thyme, Prime</li>
-            <li>"Beginner" - Dinner, Inner, Winner</li>
-          </ul>
-
-          <p>
-            <strong>Off Rhymes</strong> share consonants but not vowels <br />(7
-            points + phonetic bonus)
-          </p>
-          <ul>
-            <li>"Rhyme" - Ram, Room, Rum, Dream, Frame</li>
-            <li>"Beginner" - Bargainer, Gainer, Goner</li>
-          </ul>
-
-          <p>
-            <strong>Slant Rhymes</strong> share vowels but not consonants
-            <br />(5 points + phonetic bonus)
-          </p>
-          <ul>
-            <li>"Rhyme" - Rice, Buy, Fire, Night, Find</li>
-            <li>"Beginner" - Bewilder, Deliver, Elixir</li>
-          </ul>
-
-          <p>
-            <strong>Near Rhymes</strong> are other close matches <br />(1 to 3
-            points)
-          </p>
-          <ul>
-            <li>"Rhyme" - Realm, Ring, Reign, Limb, Tome, Writhe</li>
-            <li>"Beginner" - Begonia, Demeanor, Burglar</li>
-          </ul>
+        <h4>Rhyme Categories & Points:</h4>
+        <ol>
+          <li>
+            <strong>Perfect Rhymes (10 pts + bonus):</strong> Exactly matches
+            from the stressed vowel sound onwards.
+            <div><strong>Examples:</strong></div>
+            <ul>
+              <li>"Rhyme" &rarr; Time, Climb, Thyme</li>
+              <li>"Beginner" &rarr; Dinner, Inner, Winner</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Off Rhymes (7 pts + bonus):</strong> Shared consonants,
+            different vowels.
+            <div><strong>Examples:</strong></div>
+            <ul>
+              <li>"Rhyme" &rarr; Ram, Room, Dream</li>
+              <li>"Beginner" &rarr; Bargainer, Goner</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Slant Rhymes (5 pts + bonus):</strong> Shared vowels,
+            different consonants.
+            <div><strong>Examples:</strong></div>
+            <ul>
+              <li>"Rhyme" &rarr; Rice, Buy, Night</li>
+              <li>"Beginner" &rarr; Bewilder, Deliver</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Near Rhymes (1-3 pts):</strong> Other closely matching
+            sounds but not exactly alike.
+            <div><strong>Examples:</strong></div>
+            <ul>
+              <li>"Rhyme" &rarr; Realm, Ring</li>
+              <li>"Beginner" &rarr; Begonia, Demeanor</li>
+            </ul>
+          </li>
+        </ol>
+        <div class="done-button-container">
+          <button id="modal-bottom-done">Done</button>
         </div>
-        <button id="modal-bottom-done">Done</button>
       </div>
     </div>
+
     <!-- Challenge Modal -->
     <div id="challenge-modal" class="modal hidden">
       <div class="modal-content">
@@ -384,22 +262,19 @@
           <p id="challenge-paragraph">
             This link lets them play the same word you just finished.
           </p>
-          <textarea
-            id="challenge-message"
-            rows="3"
-            cols="50"
-            readonly
-          ></textarea>
+          <textarea id="challenge-message"></textarea>
           <input
             id="challenge-link"
             type="text"
             readonly
-            value="https://rhymerush.com/challenge"
+            value="https://rhymerush.com/"
             class="hidden"
           />
           <div class="challenge-modal-button-group">
             <button id="copy-challenge-message">Copy Challenge Message</button>
-            <button id="copy-challenge-link">Copy Link Only</button>
+            <button id="copy-challenge-link" class="hidden">
+              Copy Link Only
+            </button>
           </div>
         </div>
       </div>

@@ -1,23 +1,9 @@
 // GLOBALS
 // GLOBAL CONSTANTS
-
-//debugging function to print the client's screen dimensions in the placeholder text
-function printScreenDimensions() {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const screenDimensions = `${width} x ${height}`;
-  const input = document.getElementById("rhyme-goes-here-box");
-  input.setAttribute("placeholder", screenDimensions);
-}
-
-//printScreenDimensions();
-// get the duration of status messages from the CSS root variable "--status-message-duration"
-
-const COUNTDOWN_DURATION = 1; // 3 seconds
-const MOBILE_BREAKPOINT = 450;
+const COUNTDOWN_DURATION = 3; // 3 counts
 const CIRCLE_TRANSITION_DURATION = 400;
-const COUNTDOWN_INTERVAL = 800;
-const INITIAL_TIMER_VALUE = 0; // 89 seconds
+const COUNTDOWN_INTERVAL = 800; // 800 ms
+const INITIAL_TIMER_VALUE = 89; // 89 seconds
 const OFF_BLACK = "#1d1b1b";
 const ASCIIBET_PHONES = {
   AH0: "!",
@@ -94,6 +80,11 @@ const ASCIIBET_PHONES = {
 const RHYME_GOES_HERE_BOX = document.getElementById("rhyme-goes-here-box");
 const STATUS_CONTAINER = document.getElementById("status-container");
 
+document.documentElement.style.setProperty(
+  "--doc-height",
+  `${window.innerHeight}px`
+);
+
 // NAMESPACE FOR GLOBAL VARIABLES
 const RHYME_RUSH_GLOBALS = {
   dictLoaded: false,
@@ -105,6 +96,7 @@ const RHYME_RUSH_GLOBALS = {
   targetWord: "",
   targetPronunciation: "",
   targetASCIIBET: "",
+  maxEditDistance: 0,
   score: 0,
   badGuesses: new Set(),
   strongGuesses: new Set(),
@@ -141,16 +133,7 @@ async function loadDictionary() {
     const response = await fetch("./dictionary.json");
     BIG_DICT = await response.json();
     RHYME_RUSH_GLOBALS.dictLoaded = true;
-    //handleChallengeWord();
-
-    // console log the longest word in the dictionary
-    let longestWord = "";
-    for (const word in BIG_DICT) {
-      if (word.length > longestWord.length) {
-        longestWord = word;
-      }
-    }
-    console.log("Longest word in dictionary:", longestWord, longestWord.length);
+    handleChallengeWord();
   } catch (error) {
     console.error("Error loading dictionaries:", error);
     alert("Error loading dictionaries. Please try refreshing the page.");
@@ -173,12 +156,113 @@ loadStarterWords();
 document
   .getElementById("get-this-party-started-button")
   .addEventListener("click", startCountdown);
+// form submit event listener
 document
   .getElementById("so-you-think-you-can-rhyme-form")
   .addEventListener("submit", submitWord);
 
+// Listen for the restart button to be clicked
+document.getElementById("restart-button").addEventListener("click", resetGame);
+
+// Listen for how to play button to be clicked
+document.getElementById("how-to-play").addEventListener("click", function () {
+  document.getElementById("instruction-modal").style.display = "block";
+  // check if the user is on a mobile device
+  if (window.innerWidth < 768) {
+    // show the done button
+    document.getElementById("modal-bottom-done").classList.remove("hidden");
+  } else {
+    // hide the done button
+    document.getElementById("modal-bottom-done").classList.add("hidden");
+  }
+});
+
+// Instruction Modal close button
+document
+  .querySelector("#instruction-modal .close-button")
+  .addEventListener("click", function () {
+    document.getElementById("instruction-modal").style.display = "none";
+  });
+// Instruction Modal Done button
+document
+  .getElementById("modal-bottom-done")
+  .addEventListener("click", function () {
+    document.getElementById("instruction-modal").style.display = "none";
+  });
+
+// Challenge a Friend Button
+document.getElementById("challenge-button").addEventListener("click", () => {
+  document.getElementById("challenge-modal").style.display = "block";
+});
+
+// Challenge Modal close button
+document
+  .getElementById("close-challenge-modal")
+  .addEventListener("click", () => {
+    document.getElementById("challenge-modal").style.display = "none";
+  });
+
+// Listen for clicks (desktop) and for taps (mobile) outside modals
+function closeModalIfClickedOutside(event) {
+  const modal = document.getElementById("instruction-modal");
+  const challengeModal = document.getElementById("challenge-modal");
+  if (event.target == modal) {
+    modal.style.display = "none";
+    return;
+  }
+  if (event.target == challengeModal) {
+    challengeModal.style.display = "none";
+    return;
+  }
+}
+window.addEventListener("click", closeModalIfClickedOutside);
+window.addEventListener("touchstart", closeModalIfClickedOutside);
+
+// helper for copying the challenge message to the clipboard
+async function copyContent(element) {
+  try {
+    await navigator.clipboard.writeText(element.value);
+    return true;
+  } catch (err) {
+    console.error("Failed to copy: ", err);
+    return false;
+  }
+}
+// helper for changing the button text to "Copied!" for 3 seconds and then back to the original text
+function changeButtonText(button) {
+  const originalText = button.textContent;
+  button.textContent = "Copied!";
+  setTimeout(() => {
+    button.textContent = originalText;
+  }, 3000);
+}
+
+// Copy the challenge message to the clipboard
+document
+  .getElementById("copy-challenge-message")
+  .addEventListener("click", () => {
+    const copied = copyContent(document.getElementById("challenge-message"));
+    if (copied) {
+      changeButtonText(document.getElementById("copy-challenge-message"));
+    }
+  });
+
+// lets create some handlers that add and then remove an "active" state when a button is touch tapped.
+const buttons = document.querySelectorAll("button");
+// iterate through the buttons and add the event listeners
+for (const button of buttons) {
+  button.addEventListener("touchstart", function () {
+    this.classList.add("active");
+  });
+  button.addEventListener("touchend", function () {
+    this.classList.remove("active");
+  });
+  button.addEventListener("click", function () {
+    this.classList.remove("active");
+  });
+}
+
 // Start Countdown block ------------------------------------------------------
-// startCountdown({ clientX: 280, clientY: 361 }); // start this just to get to this screen for now
 function setThemeColor(color) {
   let themeColorTag = document.querySelector("meta[name=theme-color]");
 
@@ -196,6 +280,7 @@ function getMaxDistance(x, y) {
   const maxY = Math.max(y, window.innerHeight - y);
   return Math.sqrt(maxX ** 2 + maxY ** 2);
 }
+
 function startCountdown(event) {
   // HACK TO GET AROUND MOBILE KEYBOARD ISSUE on IOS
   const dumb = document.createElement("input");
@@ -209,84 +294,64 @@ function startCountdown(event) {
   document.body.prepend(dumb);
   dumb.focus();
 
-  const countdownElement = document.getElementsByClassName("counter")[0];
+  const countdownElement = document.getElementsByClassName("step-0")[0];
   const countdownScreen = document.getElementsByClassName("get-ready")[0];
   const initScreen = document.getElementsByClassName("init")[0];
   const nav = document.getElementsByClassName("nav")[0];
-  let countdownNumber = COUNTDOWN_DURATION;
 
-  // set duration of transiton on css variable
-  document.documentElement.style.setProperty(
-    "--circle-transition-duration",
-    `${CIRCLE_TRANSITION_DURATION}ms`
-  );
+  fadeOverlayInAndOut(CIRCLE_TRANSITION_DURATION, "var(--off-black)", () => {
+    // Hide the init screen
 
-  // routine to animate a transition from the start screen to the countdown screen
-  const circle = document.getElementsByClassName("transition-circle")[0];
-  // Retrieve coordinates where the click event occurred
-  const x = event.clientX;
-  const y = event.clientY;
-
-  // Calculate the maximum distance the circle will need to cover
-  const maxDistance = getMaxDistance(x, y);
-
-  // Initially set the circle to emanate from the click point
-  circle.style.left = `${x}px`;
-  circle.style.top = `${y}px`;
-  circle.style.width = "0px";
-  circle.style.height = "0px";
-  circle.style.opacity = "1";
-  // circle.style.boxShadow = "0 0 25px 25px var(--rhyme-rush-red)";
-
-  // force animation elements to happen in the right order
-  requestAnimationFrame(() => {
-    const circleDiameter = maxDistance * 2 - 25; // 25 is the box shadow
-    circle.style.width = `${circleDiameter}px`;
-    circle.style.height = `${circleDiameter}px`;
-    circle.style.left = `${x - maxDistance}px`;
-    circle.style.top = `${y - maxDistance}px`;
-  });
-
-  // Hide the initial screen and show the next screen after the animation
-  setTimeout(() => {
-    document.body.style.backgroundColor = "var(--rhyme-rush-red)";
-    // set the theme color in the meta tag
-    setThemeColor(OFF_BLACK);
     initScreen.classList.add("hidden");
     countdownScreen.classList.remove("hidden");
+    document.body.style.backgroundColor = "var(--rhyme-rush-red)";
+
     nav.classList.remove("hidden");
-    nav.style.opacity = 1;
-    countdownElement.classList.remove("transparent");
+    setThemeColor(OFF_BLACK);
+
+    // countdownElement.classList.remove("transparent");
     countdownElement.classList.add("fade-in-scale");
+  });
 
-    let index = 0;
-    RHYME_RUSH_GLOBALS.countdownInterval = setInterval(function () {
-      if (countdownNumber <= 0) {
-        // this is when the game starts
-        clearInterval(RHYME_RUSH_GLOBALS.countdownInterval);
-        // document.getElementById("countdown").classList.add("hidden");
-        startGame();
-        setTimeout(() => {
-          document.getElementById("rhyme-goes-here-box").focus();
-          dumb.remove();
-        }, CIRCLE_TRANSITION_DURATION + 10);
-      } else {
-        const element = document.getElementsByClassName(`step-${index}`)[0];
-        element.classList.add("hidden");
-        const nextElement = document.getElementsByClassName(
-          `step-${index + 1}`
-        )[0];
-        nextElement.classList.remove("hidden");
-        nextElement.classList.remove("transparent");
-        nextElement.classList.add("fade-in-scale");
-        index++;
-        countdownElement.textContent = countdownNumber;
-        countdownNumber--;
-      }
-    }, COUNTDOWN_INTERVAL);
-  }, CIRCLE_TRANSITION_DURATION); // same duration as the CSS transition
+  nav.style.opacity = 1;
+  let countdownNumber = COUNTDOWN_DURATION;
 
-  // END HACK
+  let index = 0;
+  RHYME_RUSH_GLOBALS.countdownInterval = setInterval(function () {
+    if (countdownNumber <= 0) {
+      clearInterval(RHYME_RUSH_GLOBALS.countdownInterval);
+      startGame(); // Assuming startGame is a function you've defined elsewhere
+      setTimeout(() => {
+        document.getElementById("rhyme-goes-here-box").focus();
+        dumb.remove();
+
+        const step0 = document.getElementsByClassName("step-0")[0];
+        const step1 = document.getElementsByClassName("step-1")[0];
+        const step2 = document.getElementsByClassName("step-2")[0];
+        const step3 = document.getElementsByClassName("step-3")[0];
+
+        step0.classList.remove("fade-in-scale");
+        step0.classList.remove("hidden");
+        step1.classList.replace("fade-in-scale", "transparent");
+        step2.classList.replace("fade-in-scale", "transparent");
+        step3.classList.replace("fade-in-scale", "transparent");
+        step3.classList.add("hidden");
+
+        // step0.classList.remove
+      }, CIRCLE_TRANSITION_DURATION / 2 + 10); // You can adjust the delay if necessary
+    } else {
+      const element = document.getElementsByClassName(`step-${index}`)[0];
+      element.classList.add("hidden");
+      const nextElement = document.getElementsByClassName(
+        `step-${index + 1}`
+      )[0];
+      nextElement.classList.remove("hidden");
+      nextElement.classList.remove("transparent");
+      nextElement.classList.add("fade-in-scale");
+      index++;
+      countdownNumber--;
+    }
+  }, COUNTDOWN_INTERVAL);
 }
 
 // -- End Countdown block -----------------------------------------------------
@@ -305,52 +370,30 @@ function getRandomNumber(min, max) {
   }
 }
 
-// Start Game block -----------------------------------------------------------
-
+// Start "PLAYING GAME" block -----------------------------------------------------------
 function startGame() {
   // analytics event
   gtag("event", "game_start", {
     event_category: "game",
     event_label: "Game Started",
-    value: RHYME_RUSH_GLOBALS.isChallengeMode ? "challenge" : "normal", // Assuming you have a boolean flag for challenge mode
+    value: RHYME_RUSH_GLOBALS.isChallengeMode ? "challenge" : "normal",
   });
 
-  // similar to the countdown, we do another cirlce transition
   const gameScreen = document.getElementsByClassName("game")[0];
   const countdownScreen = document.getElementsByClassName("get-ready")[0];
   const nav = document.getElementsByClassName("nav")[0];
-  nav.classList.remove("hidden");
-
-  const circle = document.getElementsByClassName("transition-circle")[1];
-  // this time we want to start the circle from the center of the screen
-  const x = window.innerWidth / 2;
-  const y = window.innerHeight / 2;
-  const maxDistance = getMaxDistance(x, y);
-
-  // Initially set the circle to emanate from the click point
-  circle.style.left = `${x}px`;
-  circle.style.top = `${y}px`;
-  circle.style.width = "0px";
-  circle.style.height = "0px";
-  circle.style.opacity = "1";
-
-  // force animation elements to happen in the right order
-  requestAnimationFrame(() => {
-    const circleDiameter = maxDistance * 2 - 25; // 25 is the box shadow
-    circle.style.width = `${circleDiameter}px`;
-    circle.style.height = `${circleDiameter}px`;
-    circle.style.left = `${x - maxDistance}px`;
-    circle.style.top = `${y - maxDistance}px`;
-  });
   nav.style.color = "var(--off-white)";
-  // Hide the count screen and show the game screen after the animation
-  setTimeout(() => {
-    document.body.style.backgroundColor = "var(--found-rhymes-grey)";
-    countdownScreen.classList.add("hidden");
-    gameScreen.classList.remove("hidden");
-  }, CIRCLE_TRANSITION_DURATION);
+  fadeOverlayInAndOut(
+    CIRCLE_TRANSITION_DURATION / 2,
+    "var(--off-black)",
+    () => {
+      countdownScreen.classList.add("hidden");
+      gameScreen.classList.remove("hidden");
+      document.body.style.backgroundColor = "var(--found-rhymes-grey)";
+    }
+  );
 
-  // lets get the counter started
+  // Start the timer
   startTimer();
 
   if (!RHYME_RUSH_GLOBALS.isChallengeMode) {
@@ -379,7 +422,6 @@ function startGame() {
   // set the max edit distance
   RHYME_RUSH_GLOBALS.maxEditDistance = RHYME_RUSH_GLOBALS.targetASCIIBET.length;
 }
-
 // helper for keeping track of the timer
 function startTimer() {
   RHYME_RUSH_GLOBALS.timer_interval = setInterval(function () {
@@ -395,10 +437,9 @@ function startTimer() {
     RHYME_RUSH_GLOBALS.clock_seconds--;
   }, 1000);
 }
+// -- End "PLAYING GAME" block ----------------------------------------------------
 
-// -- End Start Game block ----------------------------------------------------
-
-// End Game block -------------------------------------------------------------
+// Start "GAME OVER" block -------------------------------------------------------------
 function endGame() {
   // analytics event
   gtag("event", "game_end", {
@@ -406,11 +447,179 @@ function endGame() {
     event_label: "Game Ended",
     value: RHYME_RUSH_GLOBALS.score,
   });
+  // document.getElementById("overlay").style.zIndex = 999;
 
+  fadeOverlayInAndOut(
+    CIRCLE_TRANSITION_DURATION / 3,
+    "var(--off-black)",
+    () => {
+      document.querySelector(".game").classList.add("hidden");
+      document.querySelector(".end").classList.remove("hidden");
+      document.body.style.backgroundColor = "var(--found-rhymes-grey)";
+    }
+  );
+  // document.getElementById("overlay").style.zIndex = 9999;
   // hide the game screen and show the end screen
-  document.querySelector(".game").classList.add("hidden");
-  document.querySelector(".end").classList.remove("hidden");
+
+  // update the score display
+  document.getElementById("final-score").textContent = RHYME_RUSH_GLOBALS.score;
+
+  document.getElementById("end-screen-target-word-display").textContent =
+    RHYME_RUSH_GLOBALS.targetWord;
+
+  sortFoundRhymes();
+
+  // update the display of found rhymes
+
+  // get each category of rhyme's container
+  const perfectRhymesContainer = document.querySelector(
+    ".perfect-rhymes .rhymes-list"
+  );
+  const offRhymesContainer = document.querySelector(".off-rhymes .rhymes-list");
+  const slantRhymesContainer = document.querySelector(
+    ".slant-rhymes .rhymes-list"
+  );
+  const nearRhymesContainer = document.querySelector(
+    ".near-rhymes .rhymes-list"
+  );
+
+  // iterate through the final guesses array and add each word to the appropriate container
+  for (const guess of RHYME_RUSH_GLOBALS.finalGuesses) {
+    const rhymeItem = createRhymeListItem(guess.word, guess.points);
+    switch (guess.category) {
+      case "perfect":
+        perfectRhymesContainer.appendChild(rhymeItem);
+        break;
+      case "off":
+        offRhymesContainer.appendChild(rhymeItem);
+        break;
+      case "slant":
+        slantRhymesContainer.appendChild(rhymeItem);
+        break;
+      case "near":
+        nearRhymesContainer.appendChild(rhymeItem);
+        break;
+    }
+  }
+  // for any of the categories that are populated, show the container
+  if (perfectRhymesContainer.children.length > 0) {
+    perfectRhymesContainer.parentElement.classList.remove("hidden");
+  }
+  if (offRhymesContainer.children.length > 0) {
+    offRhymesContainer.parentElement.classList.remove("hidden");
+  }
+  if (slantRhymesContainer.children.length > 0) {
+    slantRhymesContainer.parentElement.classList.remove("hidden");
+  }
+  if (nearRhymesContainer.children.length > 0) {
+    nearRhymesContainer.parentElement.classList.remove("hidden");
+  }
+
+  // create the challenge link
+  const link = `${window.location.origin}/challenge/${btoa(
+    RHYME_RUSH_GLOBALS.targetWord
+  )}`;
+
+  // get the hidden input element for the link and set its value
+  document.getElementById("challenge-link").value = link;
+
+  // build challenge message
+  const message = `I scored ${RHYME_RUSH_GLOBALS.score} points in Rhyme Rush! Can you beat my score? ${link}`;
+
+  // set the textarea value
+  document.getElementById("challenge-message").value = message;
 }
+function sortFoundRhymes() {
+  // sort the found rhymes by score
+  RHYME_RUSH_GLOBALS.finalGuesses.sort((a, b) => {
+    if (a.points > b.points) return -1;
+    if (a.points < b.points) return 1;
+    return 0;
+  });
+}
+
+// reset all the game state variables and views
+function resetGame() {
+  if (RHYME_RUSH_GLOBALS.isChallengeMode) {
+    // Reset the challenge mode flag
+    RHYME_RUSH_GLOBALS.isChallengeMode = false;
+    // Update the URL to the root
+    window.history.pushState({}, "", "/");
+  }
+
+  // clear the timer interval
+  clearInterval(RHYME_RUSH_GLOBALS.timer_interval);
+  // clear the countdown interval
+  clearInterval(RHYME_RUSH_GLOBALS.countdownInterval);
+  // clear the current message timeout
+  clearTimeout(RHYME_RUSH_GLOBALS.currentMessageTimeout);
+  // null these out
+  RHYME_RUSH_GLOBALS.timer_interval = null;
+  RHYME_RUSH_GLOBALS.countdownInterval = null;
+  RHYME_RUSH_GLOBALS.currentMessageTimeout = null;
+
+  // reset the clock seconds
+  RHYME_RUSH_GLOBALS.clock_seconds = INITIAL_TIMER_VALUE;
+
+  // clear the target word
+  RHYME_RUSH_GLOBALS.targetWord = "";
+  // clear the target pronunciation
+  RHYME_RUSH_GLOBALS.targetPronunciation = "";
+  // clear the target ASCIIBET
+  RHYME_RUSH_GLOBALS.targetASCIIBET = "";
+  // clear the max edit distance
+  RHYME_RUSH_GLOBALS.maxEditDistance = 0;
+  // clear the score
+  RHYME_RUSH_GLOBALS.score = 0;
+  // clear the bad guesses set
+  RHYME_RUSH_GLOBALS.badGuesses.clear();
+  // clear the strong guesses set
+  RHYME_RUSH_GLOBALS.strongGuesses.clear();
+  // clear the weak guesses set
+  RHYME_RUSH_GLOBALS.weakGuesses.clear();
+  // clear the final guesses array
+  RHYME_RUSH_GLOBALS.finalGuesses.length = 0;
+
+  fadeOverlayInAndOut(CIRCLE_TRANSITION_DURATION, "var(--off-white)", () => {
+    // hide the end screen and show the initial screen
+    document.querySelector(".end").classList.add("hidden");
+    document.querySelector(".init").classList.remove("hidden");
+    // hide the nav
+    document.querySelector(".nav").classList.add("hidden");
+    // reset the theme color
+    setThemeColor("var(--off-white)");
+    // reset the background color
+    document.body.style.backgroundColor = "var(--off-white)";
+  });
+
+  // reset the UI
+
+  // reset the nav color
+  document.querySelector(".nav").style.color = "var(--rhyme-rush-red)";
+
+  // reset the target word display
+  document.querySelector(".target-word").textContent = "";
+
+  // reset the text entry box
+  RHYME_GOES_HERE_BOX.value = "";
+
+  // use panel display utility function to reset the timer and score displays
+  updateNumberPanel(INITIAL_TIMER_VALUE, "timer-number-container");
+  updateNumberPanel(0, "score-number-container");
+
+  // clear each of the rhyme categories
+  const rhymeCategories = document.querySelectorAll(".rhymes-list-container");
+  for (const category of rhymeCategories) {
+    category.classList.add("hidden");
+    const rhymeList = category.querySelector(".rhymes-list");
+    rhymeList.innerHTML = "";
+  }
+  // reset the end screen target word and score (even though we overwrite them later anyway)
+  document.getElementById("end-screen-target-word-display").textContent = "";
+  document.getElementById("final-score").textContent = "0";
+}
+
+// -- End "GAME OVER" block -----------------------------------------------------
 
 // Playing game stuff ---------------------------------------------------------
 // Submit Word block ----------------------------------------------------------
@@ -805,7 +1014,7 @@ function updateNumberPanel(number, panel) {
 // function to update the score and display it
 function updateScore(points) {
   RHYME_RUSH_GLOBALS.score += points;
-  updateNumberPanel(RHYME_RUSH_GLOBALS.score, "scoreboard-number-container");
+  updateNumberPanel(RHYME_RUSH_GLOBALS.score, "score-number-container");
 }
 function updateStatusMessage(topLine, type = "blue-bg", word = "") {
   // Remove any existing timeouts
@@ -869,4 +1078,90 @@ function updateFoundRhymes(word) {
   wordElement.classList.add("visible");
 }
 
+// helper to create the dom elements for the rhyme list items
+function createRhymeListItem(word, score) {
+  const rhymeItem = document.createElement("div");
+  rhymeItem.className = "rhyme-item";
+  const wordElement = document.createElement("span");
+  wordElement.className = "word";
+  wordElement.textContent = word;
+  const dotsElement = document.createElement("span");
+  dotsElement.className = "dots";
+  const scoreElement = document.createElement("span");
+  scoreElement.className = "score";
+  scoreElement.textContent = score;
+  rhymeItem.appendChild(wordElement);
+  rhymeItem.appendChild(dotsElement);
+  rhymeItem.appendChild(scoreElement);
+  return rhymeItem;
+}
+
 // -- End Display Helper Functions --------------------------------------------
+function fadeOverlayInAndOut(duration = 500, color = "black", callback = null) {
+  const overlay = document.getElementById("overlay");
+  overlay.style.backgroundColor = color;
+  overlay.style.transition = `opacity ${duration / 2}ms`;
+  overlay.style.display = "block";
+
+  // Fade in
+  overlay.style.opacity = 1;
+
+  // Wait for the fade-in to complete
+  setTimeout(() => {
+    // Execute the callback, if any. This is where you'd make your changes.
+    if (callback) {
+      callback();
+    }
+
+    // Fade out
+    overlay.style.opacity = 0;
+
+    // Remove overlay after fade-out complete
+    setTimeout(() => {
+      overlay.style.display = "none";
+    }, duration / 2);
+  }, duration / 2);
+}
+
+// CHALLENGE MODE STUFF -------------------------------------------------------
+function handleChallengeWord() {
+  const pathArray = window.location.pathname.split("/");
+  if (pathArray.length > 2 && pathArray[1] === "challenge") {
+    const base64Word = pathArray[2];
+
+    // this can throw an error if the word is not a valid base64 string
+    // so we wrap it in a try/catch
+    try {
+      const decodedWord = atob(base64Word);
+      const normalizedWord = normalize(decodedWord);
+      if (pronunciationExists(normalizedWord)) {
+        RHYME_RUSH_GLOBALS.targetWord = normalizedWord;
+        RHYME_RUSH_GLOBALS.isChallengeMode = true;
+        // toggle the visibility of the welcome message and the start button
+        document.getElementById("challenge-is-good").classList.remove("hidden");
+        document.getElementById("challenge-is-good").style.color =
+          "var(--off-black)";
+      } else {
+        // if the word is not in the dictionary, we need to notify
+        // the user that the challenge link is invalid
+        handleBadChallengeLink();
+      }
+    } catch (error) {
+      handleBadChallengeLink();
+    }
+  }
+}
+function handleBadChallengeLink() {
+  // When an invalid challenge link is accessed
+  gtag("event", "invalid_challenge", {
+    event_category: "error",
+    event_label: "Invalid Challenge Link",
+  });
+
+  // toggle the visibility of the warning message and the start button
+  document.getElementById("challenge-is-bad").classList.remove("hidden");
+  document.getElementById("challenge-is-bad").style.color =
+    "var(--rhyme-rush-red)";
+  // update the url to remove the invalid word
+  window.history.pushState({}, "", "/");
+}
