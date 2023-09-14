@@ -608,15 +608,28 @@ function resetGame() {
   updateNumberPanel(0, "score-number-container");
 
   // clear each of the rhyme categories
-  const rhymeCategories = document.querySelectorAll(".rhymes-list-container");
+  const rhymeListContainer = document.querySelector(".rhymes-list-container");
+  const rhymeCategories = rhymeListContainer.children;
   for (const category of rhymeCategories) {
     category.classList.add("hidden");
     const rhymeList = category.querySelector(".rhymes-list");
+
     rhymeList.innerHTML = "";
   }
   // reset the end screen target word and score (even though we overwrite them later anyway)
   document.getElementById("end-screen-target-word-display").textContent = "";
   document.getElementById("final-score").textContent = "0";
+
+  // reset the found rhymes display
+  document.getElementById("found-rhymes-min").innerHTML = "";
+  // reset the hidden status of the found rhymes container
+  document.querySelector(".found-rhymes-wrapper").classList.add("hidden");
+
+  // reset the hidden status and color of challenge warning and challenge notice
+  document.getElementById("challenge-is-bad").classList.add("hidden");
+  document.getElementById("challenge-is-good").classList.add("hidden");
+  document.getElementById("challenge-is-bad").style.color = "var(--off-white)";
+  document.getElementById("challenge-is-good").style.color = "var(--off-white)";
 }
 
 // -- End "GAME OVER" block -----------------------------------------------------
